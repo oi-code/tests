@@ -3,7 +3,7 @@ package main;
 import java.util.concurrent.TimeUnit;
 import javax.persistence.*;
 
-public class Test {
+public class Test {   
 
     public static void main(String... args) throws Exception {
 
@@ -46,11 +46,10 @@ public class Test {
 
 @Entity
 @Table(name = "object")
-class Hoba {
-
-    // @Column(name = "id") //это можно не указывать
+class Hoba {    
     private static int q = 0;
     @Id
+ // @Column(name = "id") //это можно не указывать
     private int id;
     @Column(name = "name")
     private String text;
