@@ -11,8 +11,7 @@ public class Test {
 	t.setText("HoHoHo");
 
 	EntityManagerFactory emf = Persistence.createEntityManagerFactory("try");
-	EntityManager em = emf.createEntityManager();
-	
+	EntityManager em = emf.createEntityManager();	
 	new Thread() {
 	    {
 		this.setDaemon(true);
@@ -20,13 +19,15 @@ public class Test {
 	    @Override
 	    public void run() {
 		em.getTransaction().begin();
-		Hoba h=(Hoba)em.getReference(Hoba.class, 66);
+		Hoba h=(Hoba)em.getReference(Hoba.class, 3);
+		h.setText("jaja");
+		em.merge(h);
 		em.getTransaction().commit();
 		System.out.println(h);
 	    }
 	}.start();
 	
-	TimeUnit.SECONDS.sleep(1);
+	TimeUnit.SECONDS.sleep(4);
 	/*em.getTransaction().begin();
 	@SuppressWarnings("unchecked")
 	List<Message> rs = em.createQuery("select asdf from Message asdf").getResultList();
