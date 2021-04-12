@@ -3,6 +3,6 @@
 	strategy = "enhanced-sequence", 
 	parameters = {
 		@org.hibernate.annotations.Parameter(name = "seqName", value = "JPWH_SEQUENCE"),
-		@org.hibernate.annotations.Parameter(name = "initial_value", value = "1000") 
+		@org.hibernate.annotations.Parameter(name = "initial_value", value = "11") 
 	})
 package info;

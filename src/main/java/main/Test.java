@@ -1,12 +1,17 @@
 package main;
 
-
+import java.io.IOException;
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import javax.persistence.*;
@@ -14,19 +19,36 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
+import javax.validation.constraints.NotNull;
 
 import org.apache.log4j.Logger;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
 public class Test {
 
-    public static Logger log = Logger.getLogger("kekw");
+    public static Logger log = Logger.getLogger("logger");
     private static List<Hoba> hobas;
+    public static final String HOME = System.getProperty("user.home");
+    public static boolean check = false, isAlive = true;;
 
-    public static void main(String... args) throws Exception {
-	Test.init();
+    public static void getLine() {
+	System.err.print("--->\sLine:\s" + Thread.currentThread().getStackTrace()[2].getLineNumber() + ".\sThread:\s"
+		+ Thread.currentThread().getName() + ".\sInfo:\s");
     }
-    
-    private static void init() throws Exception{
+
+    public static void main(String... args) {
+	try {
+	    Test.init();
+	    //Runtime.getRuntime().exec("java -jar " + Test.HOME + "\\Desktop\\helper.jar");
+	    log.warn("OK");
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    log.error("NOT_OK");
+	}
+    }
+
+    private static void init() throws Exception {
 	Hoba t = new Hoba();
 	t.setText("HoHoHo_");
 
@@ -41,14 +63,31 @@ public class Test {
 	    @Override
 	    public void run() {
 		try {
-		    log.warn("start thread");
-		    em.getTransaction().begin();
-		    Hoba h = new Hoba();// em.getReference(Hoba.class, 3);		    
-		    em.persist(h);
-		    em.persist(t);		   
-		    em.getTransaction().commit();
+		    Test.getLine();
+		    log.warn("start thread, ENTER IN thread SYNC BLOCK");
+		    Hoba h = new Hoba();// em.getReference(Hoba.class, 3);
+		    synchronized (log) {
+			Test.getLine();
+			log.warn("IN thread SYNC BLOCK");
+			while (Test.check) {
+			    log.wait();
+			}
+			Test.getLine();
+			log.warn("IN thread SYNC BLOCK AFTER SYNC");
+
+			em.getTransaction().begin();
+			em.persist(h);
+			em.persist(t);
+			em.getTransaction().commit();
+
+			Test.getLine();
+			log.warn("END thread SYNC BLOCK, TRANSACTION END");
+			Test.check = true;
+			log.notifyAll();
+		    }
 		    // System.out.println(h+"\n"+t);
-		    log.warn("end thread");
+		    Test.getLine();
+		    log.warn("END thread, EXIT SYNC BLOCK");
 		} catch (Exception e) {
 		    e.printStackTrace();
 		}
@@ -61,19 +100,20 @@ public class Test {
 	 * System.err.println(it.getPersistenceType());
 	 */
 
+	// waiting for creating thread described above
+	TimeUnit.SECONDS.sleep(1);
+
+	em.getTransaction().begin();
 	CriteriaBuilder cb = em.getCriteriaBuilder();
 	CriteriaQuery<Hoba> query = cb.createQuery(Hoba.class);
 	Root<Hoba> fromHoba = query.from(Hoba.class);
 	Path<String> p = fromHoba.get("text");
-
 	query.where(cb.like(p, cb.parameter(String.class, "pattern")));
 	// query.select(fromHoba);
 	// List<Hoba> hobas = em.createQuery(query).getResultList();
 	hobas = em.createQuery(query).setParameter("pattern", t.getText()).getResultList();
-	// TimeUnit.SECONDS.sleep(3);
-	em.close();
-	emf.close();
-	TimeUnit.SECONDS.sleep(2);
+	em.getTransaction().commit();
+
 	/*
 	 * em.getTransaction().begin();
 	 * 
@@ -90,35 +130,78 @@ public class Test {
 	 * 
 	 * em.getTransaction().commit();
 	 */
-	for (Hoba b : hobas) {
-	    System.out.println(b);
-	}
+	//Test.check = false;
+	Thread q = new Thread() {
+	    @Override
+	    public void run() {
+		try {
+		    for (int i = 1; i < 6; i++) {
+			Test.getLine();
+			log.warn(i);
+			TimeUnit.SECONDS.sleep(1);
+		    }
+		    Test.check = true;
+		    synchronized (log) {
+			log.notifyAll();
+		    }
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		}
 
-	System.exit(0);
+	    }
+	};	
+	synchronized (log) {
+	    Test.getLine();
+	    log.warn("enter IN main SYNC BLOCK");
+	    while (!Test.check) {
+		q.start();
+		log.wait();
+	    }
+	    em.close();
+	    emf.close();
+	    Test.check = false;
+	    log.notifyAll();
+	    Test.getLine();
+	    log.warn("exit main SYNC BLOCK");
+	}
+	if (hobas.isEmpty()) {
+	    Test.getLine();
+	    log.warn("hobas is empty");
+	} else {
+	    for (Hoba b : hobas) {
+		log.warn(b);
+	    }
+	}	
+	System.exit(0);	
     }
 }
 
 @Entity
-@Table(name = "object")
+@Table(name = "OBJECTS")
 class Hoba {
-    private static int q = 0;
     @Id
     @GeneratedValue(generator = "generator")
     // @Column(name = "id")
-    private int id;
+    private Long id;
     @Column(name = "name")
+    @Lob
     private String text;
     @Column(name = "date")
-    private String ldt = LocalDateTime.now()
-	    .format(DateTimeFormatter.ofPattern("EEE, dd.MMMM.yyyy, HH:mm:ss", Locale.ENGLISH)).toString();
+    private Date ldt = new Date();
+    // String ldt=LocalDateTime.now().format(DateTimeFormatter.ofPattern("EEE,
+    // dd.MMMM.yyyy, HH:mm:ss", Locale.ENGLISH));
+    @Column(name = "mass", length = 1000)
+    private int[] arr = ThreadLocalRandom.current().ints(0, 500).limit(10).toArray();
+    @Column(name = "serClass")
+    private SerClass serClass = new SerClass();
 
     public Hoba() {
 	// id = q++;// ThreadLocalRandom.current().nextInt();
-	text = "NewName_" + id;
+	text = "NewName_";
     }
 
     public void setText(String text) {
-	this.text = text + id;
+	this.text = text;
     }
 
     public String getText() {
@@ -136,8 +219,8 @@ class Hoba {
      */
 
     public String toString() {
-	return String.format("--->" + this.getClass().getName() + "\n\tid:\s%d\n\tname:\s%s\n\tdate:\s%s", id, text,
-		ldt);
+	return String.format("\n\t--->" + this.getClass().getName() + "\n\tid:\s%d\n\tname:\s%s\n\tdate:\s%s", id, text,
+		ldt + "\n\t" + Arrays.toString(arr) + "\n\t" + serClass+"\n");
     }
 
     /*
@@ -158,4 +241,31 @@ class Hoba {
      * System.out.println(rs.getInt(1)+"\t"+rs.getString(2));
      * }
      */
+}
+
+@Entity
+class SerClass implements Serializable {
+    @Id
+    @GeneratedValue
+    @Access(AccessType.FIELD)
+    private Long id;
+    @Access(AccessType.PROPERTY)
+    private String res = this.getClass().getSimpleName() + ".class.";
+    @Access(AccessType.FIELD)
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "lastAcces", insertable = true, updatable = false)
+    @Generated(GenerationTime.ALWAYS)
+    private Date lastModificationTime;//LocalDateTime.now(ZoneId.of("GMT+3")).toString();
+
+    public void setRes(String res) {
+	this.res = res;
+    }
+    public String getRes() {
+	return res;
+    }
+
+    @Override
+    public String toString() {
+	return res;
+    }
 }
