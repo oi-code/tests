@@ -928,10 +928,10 @@ class TouristsVoucher {
 	String result = "";
 	int count = ThreadLocalRandom.current().nextInt(razlichnieProdlojeniya.size());
 	for (int i = 0; i < count; i++) {
-	    result += razlichnieProdlojeniya.get(i);
+	    result += razlichnieProdlojeniya.get(i)+"\n";
 	}
 	System.out.println(
 		"VASHE LYCHSEE PRIDLOJENITT TYT! TOL`KO SEGODNYA SO SKIDKOI 999%! (tol`ki v kredit pod 0.1% ejesecundno, skida ne u4itivaet summu credita):\n"
-			+ result);
+			+ result.trim());
     }
 }
