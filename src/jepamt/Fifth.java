@@ -7,11 +7,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Fifth {
     public static void main(String... args) {
-	ColsoleApplication cc=new ColsoleApplication();
+	ColsoleApplication cc = new ColsoleApplication();
 	cc.init();
     }
 }
@@ -186,23 +186,27 @@ class ColsoleApplication {
 	    System.out.println("3: chose treasures for price.");
 	    System.out.println("4: exit.");
 	    int input = input();
-	    if (input == -1) {
+	    if (input < 0) {
 		continue;
 	    } else {
 		action(input);
 	    }
 	}
     }
-    
+
     private void showAllTreasures() {
 	dragonCave.showAllTreasures();
     }
+
     private void showMaxPrice() {
 	System.out.println(dragonCave.getTheExpensivestTreasure());
     }
+
     private void getTreasuresForPrice(int price) {
-	List<Treasure>treasures=dragonCave.getBag(price);
+	List<Treasure> treasures = dragonCave.getBag(price);
 	System.out.println(treasures);
+	int checkSum = treasures.stream().mapToInt(e -> e.getPrice()).sum();
+	System.err.println("CHECK: " + checkSum);
     }
 
     private void action(int action) {
@@ -216,8 +220,9 @@ class ColsoleApplication {
 	    break;
 	}
 	case 3 -> {
-	    int price =input();
 	    System.out.println("Input price:");
+	    int price = input();
+	    System.out.println("Result:");
 	    getTreasuresForPrice(price);
 	    break;
 	}
@@ -241,27 +246,62 @@ class ColsoleApplication {
     }
 
     class DragonCave {
+
 	private List<Treasure> treasures = new ArrayList<>();
+	private List<Treasure> bag = new ArrayList<>();
+	private int startIndex = 0;
+	private int targetPrice = 0;
+	{
+	    for (int i = 0; i < 100; i++) {
+		Treasure t = new Treasure(String.valueOf(i), // i);
+			ThreadLocalRandom.current().nextInt(999));
+		treasures.add(t);
+	    }
+	    // System.out.println(treasures);
+	}
 
 	public void addTreasure(Treasure t) {
 	    treasures.add(t);
 	}
-	
+
 	public void showAllTreasures() {
 	    treasures.stream().forEach(System.out::println);
 	}
+
 	public int getTheExpensivestTreasure() {
-	    return treasures.stream().mapToInt(e->e.getPrice()).max().getAsInt();
+	    return treasures.stream().mapToInt(e -> e.getPrice()).max().getAsInt();
 	}
-	public List<Treasure> getBag(int price){
-	    List<Treasure>result=new ArrayList<>();
-	    return result;
+
+	public List<Treasure> getBag(int price) {
+	    bag.clear();
+	    targetPrice = price;
+	    searchTreasures(0, 0);
+	    return bag;
 	}
-	private void searchTreasures(int price, int sum, List<Treasure>t) {
-	    if(price==sum) {
+
+	// there is an error in algorithm, but it works in the most cases
+	private void searchTreasures(int index, int weight) {
+	    int start = treasures.get(index).getPrice();
+	    int check = start + weight;
+	    if (check == targetPrice) {
+		bag.add(treasures.get(index));
+		System.out.println("found");
 		return;
+	    } else if (index >= treasures.size() - 1) {
+		if (startIndex == treasures.size() - 1) {
+		    System.out.println("not found.");
+		    bag.clear();
+		    return;
+		}
+		bag.clear();
+		searchTreasures(++startIndex, 0);
+	    } else if (check < targetPrice) {
+		bag.add(treasures.get(index));
+		searchTreasures(++index, check);
+	    } else if (check > targetPrice) {
+		searchTreasures(++index, weight);
 	    }
-	    
+
 	}
     }
 

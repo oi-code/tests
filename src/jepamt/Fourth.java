@@ -482,12 +482,12 @@ class CustomerSolution {
     }
 }
 
-class Book {
+class Bookk {
     private String title, publishingHouse, cover;
     private List<String> authors;
     private int id, yearOfPublishing, sheetCount, price;
 
-    public Book(String title, String publishingHouse, String cover, List<String> authors, int id, int yearOfPublishing,
+    public Bookk(String title, String publishingHouse, String cover, List<String> authors, int id, int yearOfPublishing,
 	    int sheetCount, int price) {
 	super();
 	this.title = title;
@@ -573,7 +573,7 @@ class Book {
 }
 
 class BookSolution {
-    private static List<Book> books = new ArrayList<>();
+    private static List<Bookk> books = new ArrayList<>();
     static {
 	for (int i = 0; i < 10; i++) {
 	    List<String> authors = new ArrayList<>();
@@ -581,7 +581,7 @@ class BookSolution {
 		authors.add(Fourth.generateString());
 	    }
 	    int publishingYear = ThreadLocalRandom.current().nextInt(1444, 2022);
-	    Book temp = new Book(Fourth.generateString(), Fourth.generateString(), Fourth.generateString(), authors, i,
+	    Bookk temp = new Bookk(Fourth.generateString(), Fourth.generateString(), Fourth.generateString(), authors, i,
 		    publishingYear, i, i);
 	    books.add(temp);
 	}
@@ -596,7 +596,7 @@ class BookSolution {
     }
 
     public static void showAuthorBook(String author) {
-	for (Book book : books) {
+	for (Bookk book : books) {
 	    for (String author_ : book.getAuthors()) {
 		if (author_.equals(author)) {
 		    System.out.println(book.getTitle());
@@ -606,7 +606,7 @@ class BookSolution {
     }
 
     public static void showPublishHouse(String house) {
-	for (Book book : books) {
+	for (Bookk book : books) {
 	    if (book.getPublishingHouse().equals(house)) {
 		System.out.println(book.getTitle());
 	    }
@@ -614,7 +614,7 @@ class BookSolution {
     }
 
     public static void showBookAfteryear(int year) {
-	for (Book book : books) {
+	for (Bookk book : books) {
 	    if (book.getYearOfPublishing() == year) {
 		System.out.println(book.getTitle());
 	    }
@@ -928,7 +928,7 @@ class TouristsVoucher {
 	String result = "";
 	int count = ThreadLocalRandom.current().nextInt(razlichnieProdlojeniya.size());
 	for (int i = 0; i < count; i++) {
-	    result += razlichnieProdlojeniya.get(i)+"\n";
+	    result += razlichnieProdlojeniya.get(i) + "\n";
 	}
 	System.out.println(
 		"VASHE LYCHSEE PRIDLOJENITT TYT! TOL`KO SEGODNYA SO SKIDKOI 999%! (tol`ki v kredit pod 0.1% ejesecundno, skida ne u4itivaet summu credita):\n"
