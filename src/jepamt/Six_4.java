@@ -1,10 +1,13 @@
 package jepamt;
 
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Six_4 {
@@ -17,13 +20,23 @@ public class Six_4 {
 class Boat {
     private final int boatId;
     private final int maxLoad;
-    private AtomicInteger currentLoad;
+    private int currentLoad;
+    private boolean state;
 
-    public Boat(int boatId, int currentLoad, int maxLoad) {
+    public Boat(int boatId, int currentLoad, int maxLoad, boolean state) {
 	super();
 	this.boatId = boatId;
-	this.currentLoad = new AtomicInteger(currentLoad);
+	this.currentLoad = currentLoad;
 	this.maxLoad = maxLoad;
+	this.state = state;
+    }
+
+    public boolean getState() {
+	return state;
+    }
+
+    public void setState(boolean state) {
+	this.state = state;
     }
 
     public int getBoatId() {
@@ -31,82 +44,72 @@ class Boat {
     }
 
     public int getCurrentLoad() {
-	return currentLoad.get();
+	return currentLoad;
     }
 
     public int getMaxLoad() {
 	return maxLoad;
     }
 
-    public void addContainer() {
-	if (currentLoad.get() < maxLoad) {
-	    currentLoad.getAndIncrement();
+    public boolean addContainer() {
+	if (currentLoad < maxLoad) {
+	    currentLoad++;
+	    return true;
 	}
+	return false;
     }
 
-    public void removeContainer() {
-	if (currentLoad.get() > 0) {
-	    currentLoad.getAndDecrement();
+    public boolean removeContainer() {
+	if (currentLoad > 0) {
+	    currentLoad--;
+	    return true;
 	}
+	return false;
     }
 }
 
 class Port {
-    private AtomicInteger currentLoad = new AtomicInteger(100);
+    private AtomicInteger currentLoad = new AtomicInteger(5000);
     private final int maxContainerCapacity = 5000;
-    private List<Dock> docks = new CopyOnWriteArrayList<>();
-    private List<Boat> boats = new CopyOnWriteArrayList<>();
+    private List<Dock> docks = new CopyOnWriteArrayList<Dock>();
+    public Queue<Boat> boats = new ConcurrentLinkedQueue<Boat>();
     private ExecutorService exec;
-
-    public Port() {
-
-    }
 
     void init() {
 	for (int i = 0; i < 10; i++) {
 	    Dock d = new Dock(i, this);
 	    docks.add(d);
 	}
+
 	exec = Executors.newFixedThreadPool(docks.size());
-	for (int i = 0; i < 100; i++) {
-	    int max = ThreadLocalRandom.current().nextInt(1001);
-	    Boat b = new Boat(i, max, ThreadLocalRandom.current().nextInt(0, max + 1));
-	    boats.add(b);
+	generator(this);
+
+	for (Dock d : docks) {
+	    exec.execute(d);
 	}
-	Thread t = new Thread(() -> {
-	    while (true) {
-		if (currentLoad.get() > 0) {
-		    currentLoad.getAndDecrement();
-		    System.out.println(currentLoad.get());
-		    try {
-			Thread.currentThread().sleep(10);
-		    } catch (InterruptedException e) {
-			System.out.println("error in monitor thread after sleep");
-		    }
-		} else {
-		    try {
-			synchronized (currentLoad) {
-			    currentLoad.wait();
-			}
-		    } catch (InterruptedException e) {
-			System.out.println("error in monitor thread, wait section");
-		    }
+
+    }
+
+    private void generator(Port p) {
+	new Thread(() -> {
+	    ThreadLocalRandom tlr = ThreadLocalRandom.current();
+	    int i = 0;
+	    boolean stop = false;
+	    while (!Thread.currentThread().isInterrupted()) {
+		if (i > 25) {
+		    stop = true;
+		}
+		int max = tlr.nextInt(1, 1001);
+		boolean b = false;// = tlr.nextBoolean();
+		if (tlr.nextInt(100) < 30) {
+		    b = true;
+		}
+		if (!stop) {
+		    Boat boat = new Boat(i++, tlr.nextInt(0, max), max, b);
+		    boats.add(boat);
 		}
 	    }
-	});
-	t.start();
-	while (true) {
-	    try {
-		Thread.currentThread().sleep(2000);
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-	    currentLoad.set(412 + currentLoad.get());
-	    synchronized (currentLoad) {
-		currentLoad.notifyAll();
-	    }
-	}
+	}).start();
     }
 
     public int getMaxContainerCapacity() {
@@ -117,13 +120,41 @@ class Port {
 	return currentLoad.get();
     }
 
+    public boolean addContainer() {
+	synchronized (currentLoad) {
+	    if (currentLoad.get() < maxContainerCapacity) {
+		currentLoad.getAndIncrement();
+		return true;
+	    }
+	}
+	return false;
+
+    }
+
+    public boolean removeContainer() {
+	synchronized (currentLoad) {
+	    if (currentLoad.get() > 0) {
+		currentLoad.getAndDecrement();
+		return true;
+	    }
+	}
+	return false;
+    }
+
+    public Boat getBoat() {
+	return boats.poll();
+    }
+
+    public boolean addBoat(Boat b) {
+	return boats.offer(b);
+    }
+
 }
 
-class Dock {
-    private Boat boat;
+class Dock implements Runnable {
+
     private final int dockId;
-    private boolean isBusy = false;
-    private Port port;
+    private final Port port;
 
     public Dock(int dockId, Port port) {
 	super();
@@ -135,31 +166,54 @@ class Dock {
 	return dockId;
     }
 
-    public void setBoat(Boat boat) {
-	if (isBusy) {
-	    return;
-	} else {
-	    this.boat = boat;
-	    isBusy = true;
+    @Override
+    public void run() {
+	while (!Thread.currentThread().isInterrupted()) {
+	    Boat boat;	    
+	    while ((boat = port.getBoat()) == null) {
+		try {
+		    System.out.printf("dock %d sleep...\n", dockId);
+		    TimeUnit.MILLISECONDS.sleep(200);
+		} catch (InterruptedException e) {
+		    System.out.println(Thread.currentThread().getName() + " interrupted.");
+		    e.printStackTrace();
+		}
+	    }
+	    int startLoad = boat.getCurrentLoad();
+	    if (boat.getState()) {
+		while (boat.getCurrentLoad() > 0) {
+		    if (port.addContainer()) {
+			boat.removeContainer();
+		    }
+		    if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
+			break;
+		    }
+		}
+	    } else {
+		while (boat.getCurrentLoad() < boat.getMaxLoad()) {
+		    if (port.removeContainer()) {
+			boat.addContainer();
+		    }
+		    if (port.getCurrentLoad() <1) {
+			break;
+		    }
+		}
+	    }
+	    try {
+		TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(200, 1001));
+	    } catch (InterruptedException e) {
+		e.printStackTrace();
+	    }
+	    if (boat.getCurrentLoad() == 0) {
+		boat.setState(false);
+	    } else {
+		boat.setState(true);
+	    }
+	    System.out.printf(
+		    "boatID: %d, portLoad: %d, startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d\n",
+		    boat.getBoatId(), port.getCurrentLoad(), startLoad, boat.getState(), boat.getMaxLoad(),
+		    boat.getCurrentLoad());
+	    port.addBoat(boat);
 	}
-    }
-
-    public void removeBoat() {
-	boat = null;
-	isBusy = false;
-    }
-
-    public void loadContainers() {
-	while (isBusy && boat.getCurrentLoad() < boat.getMaxLoad() && port.getCurrentLoad() > 0) {
-	    boat.addContainer();
-	}
-	System.out.println("Boat " + boat.getBoatId() + " loaded");
-    }
-
-    public void unloadContainers() {
-	while (isBusy && boat.getCurrentLoad() > 0 && port.getCurrentLoad() < port.getMaxContainerCapacity()) {
-	    boat.removeContainer();
-	}
-	System.out.println("Boat " + boat.getBoatId() + " unloaded");
     }
 }
