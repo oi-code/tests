@@ -1,35 +1,59 @@
 package jepamt;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 public class Six_1 {
     public static void main(String[] asd) {
 	EBook e = new EBook("TT", List.of("KEK", "CHEBURATOR"), false);
 	Book b = new Book("SS", List.of("DS", "SSD"), true);
 	BookAccouting ba = new BookAccouting();
-	User admin = new User("kek", 2L, Role.ADMIN);
-	User notAdmin = new User("cheburek", 3L, Role.USER);
-	LoginService ls=LoginService.getInstance();
-	ls.registry(admin, "123");
-	ls.registry(notAdmin, "321");
-	ls.login(notAdmin, "321".hashCode());
-	ls.login(admin, "123".hashCode());
-	ba.addBook(e, admin);
-	ba.addBook(b, notAdmin);
-	ba.addBookDescription(admin, e, "UUUUU");
-	ba.addBookDescription(notAdmin, b, "UUUUU");	
-	ba.offerBook(notAdmin, b);
+	LoginService ls = LoginService.getInstance();
+
+	ls.registry("owner", 0, "000");
+	ls.registry("admin", 1, "123");
+	ls.registry("notAdmin", 2, "321");
+
+	try {
+	    User user = ls.getUserFromId(0);
+	    Field f = user.getClass().getDeclaredField("role");
+	    f.setAccessible(true);
+	    f.set(user, Role.OWNER);
+	    ls.setRole(0, 1, Role.ADMIN);
+	} catch (Exception e1) {
+	    e1.printStackTrace();
+	}
+
+	ls.login(1, "123".hashCode());
+	ls.login(2, "321".hashCode());
+
+	ba.addBook(e, 1);
+	ba.addBook(b, 2);
+
+	ba.addBookDescription(1, e, "UUUUU");
+	ba.addBookDescription(2, b, "KKKKK");
+
+	ba.offerBook(2, b);
     }
 }
 
 enum Role {
-    USER, ADMIN
+    USER, ADMIN, OWNER
 }
 
 class Book {
@@ -122,32 +146,37 @@ class EBook extends Book {
 
 }
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 class User {
 
+    @XmlElement
     private String name;
-    private Long id;
+    @XmlElement
+    private Integer id;
+    @XmlElement
     private Role role;
 
-    public User(String name, Long id, Role role) {
+    @Deprecated
+    private User() {
+    }
+
+    public User(String name, Integer id) {
 	super();
 	this.name = name;
 	this.id = id;
-	this.role = role;
+	this.role = Role.USER;
     }
 
     public Role getRole() {
 	return role;
     }
 
-    public void setRole(Role role) {
-	this.role = role;
-    }
-
     public String getName() {
 	return name;
     }
 
-    public Long getId() {
+    public Integer getId() {
 	return id;
     }
 
@@ -180,29 +209,29 @@ class User {
 		return false;
 	} else if (!name.equals(other.name))
 	    return false;
-	if (role != other.role)
-	    return false;
 	return true;
     }
 
     @Override
     public String toString() {
 	return "User [name=" + name + ", id=" + id + ", role=" + role + "]";
-    } 
+    }
 
 }
 
 class EMailService {
     public static void sendMail(User u, String message) {
-	System.out.println("Mail sended to "+u+". "+message);
+	System.out.println("Mail sended to " + u + ". " + message);
 	// sending message on mail
     }
 }
 
 class LoginService {
+
     private static final LoginService ls = new LoginService();
-    private final Map<User, Integer> allUsers = new HashMap<>();
-    private final Set<User> loginedUser = new HashSet<User>();
+    private static final Map<Integer, User> allUsers = new ConcurrentHashMap<Integer, User>();
+    private static final Set<User> loginedUser = new CopyOnWriteArraySet<User>();
+    private static final Map<Integer, Integer> passwords = new ConcurrentHashMap<Integer, Integer>();
 
     private LoginService() {
 	// loading all users from file
@@ -212,53 +241,93 @@ class LoginService {
 	return ls;
     }
 
-    public Set<User> getAllUsers() {
-	return allUsers.keySet();
+    public Collection<User> getAllUsers() {
+	return allUsers.values();
     }
 
-    private boolean userAlreadyExist(User user, Integer password) {
-	Optional<User> u = allUsers.keySet().stream().filter(e -> e.equals(user) && allUsers.get(e) == password)
-		.findFirst();
-	if (u != null) {
-	    return true;
-	}
-	return false;
+    private boolean userAlreadyExist(Integer id) {
+	return allUsers.containsKey(id);
     }
 
-    public void addNewUser(User user, String password) {
-	Integer pass = password.hashCode();
-	if (!userAlreadyExist(user, pass)) {
-	    allUsers.put(user, pass);
+    public void addNewUser(String userName, Integer id, String password) {
+	if (!userAlreadyExist(id)) {
+	    Integer pass = password.hashCode();
+	    User user = new User(userName, id);
+	    allUsers.put(id, user);
+	    passwords.put(id, pass);
 	}
 	// here calling the method for update and synchronize text file
     }
 
-    public boolean isLogined(User user) {
-	return loginedUser.contains(user);
-    }
-
-    public boolean login(User user, Integer password) {
-	Optional<User> u = allUsers.keySet().stream().filter(e -> e.equals(user) && allUsers.get(e) == password)
-		.findFirst();
-	if (u != null) {
-	    loginedUser.add(user);
+    public boolean isLogined(Integer id) {
+	Optional<User> user = loginedUser.stream().filter(e -> e.getId() == id).findAny();
+	if (user != null) {
 	    return true;
 	}
 	return false;
     }
 
-    public boolean logOut(User user) {
-	if (isLogined(user)) {
-	    loginedUser.remove(user);
+    public boolean login(Integer id, Integer password) {
+	if (allUsers.containsKey(id)) {
+	    if ((int) passwords.get(id) == password) {
+		loginedUser.add(allUsers.get(id));
+		return true;
+	    }
+	}
+	return false;
+    }
+
+    public boolean logOut(Integer id) {
+	if (isLogined(id)) {
+	    loginedUser.remove(getUserFromId(id));
 	    return true;
 	}
 	return false;
     }
-    
-    public void registry(User u, String pass) {
-	if(!allUsers.keySet().contains(u)) {
-	    int psw=pass.hashCode();
-	    allUsers.put(u, psw);
+
+    public void registry(String userName, Integer id, String pass) {
+	User check = getUserFromId(id);
+	if (check == null) {
+	    int psw = pass.hashCode();
+	    User user = new User(userName, id);
+	    try {
+		if (id == 0) {
+		    Field f;
+		    f = User.class.getDeclaredField("role");
+		    f.setAccessible(true);
+		    f.set(user, Role.OWNER);
+		}
+		if (id == 1) {
+		    Field f = User.class.getDeclaredField("role");
+		    f.setAccessible(true);
+		    f.set(user, Role.ADMIN);
+		}
+	    } catch (Exception e) {
+		e.printStackTrace();
+	    }
+	    allUsers.put(id, user);
+	    passwords.put(id, psw);
+	}
+    }
+
+    public User getUserFromId(Integer id) {
+	User user = allUsers.get(id);
+	if (user != null) {
+	    return user;
+	}
+	return null;
+    }
+
+    public void setRole(Integer ownerId, Integer userId, Role role) {
+	if (allUsers.get(ownerId).getRole() == Role.OWNER) {
+	    User user = allUsers.get(userId);
+	    try {
+		Field f = user.getClass().getDeclaredField("role");
+		f.setAccessible(true);
+		f.set(user, Role.ADMIN);
+	    } catch (Exception e) {
+		e.printStackTrace();
+	    }
 	}
     }
 
@@ -277,20 +346,20 @@ class BookAccouting {
 	ls = LoginService.getInstance();
     }
 
-    public void addBook(Book book, User user) {
-	if (ls.isLogined(user) && user.getRole() == Role.ADMIN) {
+    public void addBook(Book book, Integer id) {
+	if (ls.isLogined(id) && ls.getUserFromId(id).getRole() == Role.ADMIN) {
 	    if (lobrary.contains(book)) {
 		System.out.println(book + " already exsist");
 		return;
 	    }
-	    System.out.println(book + " added to library by "+user);
+	    System.out.println(book + " added to library by " + ls.getUserFromId(id));
 	    lobrary.add(book);
 	} else {
-	    System.out.println("Access denied to "+user);
+	    System.out.println("Access denied to " + ls.getUserFromId(id));
 	}
     }
 
-    public void showAllBooks(User u) {
+    public void showAllBooks(Integer u) {
 	List<Book> result = new ArrayList<>();
 	if (ls.isLogined(u)) {
 	    int page = pages.get(u);
@@ -298,14 +367,14 @@ class BookAccouting {
 		result.add(lobrary.get(i));
 		page++;
 	    }
-	    //and somehow return to 0 after view all books
-	    pages.put(u, page);
+	    // and somehow return to 0 after view all books
+	    pages.put(ls.getUserFromId(u), page);
 	    System.out.println(result);
 	}
     }
 
-    public void searchBook(User user, Book book) {
-	if (ls.isLogined(user)) {
+    public void searchBook(Integer id, Book book) {
+	if (ls.isLogined(id)) {
 	    Optional<Book> b = lobrary.stream().filter(e -> e.equals(book)).findFirst();
 	    if (b != null) {
 		System.out.println("Book exist in library");
@@ -316,9 +385,9 @@ class BookAccouting {
 	}
     }
 
-    public void addBookDescription(User user, Book book, String desctiption) {
+    public void addBookDescription(Integer id, Book book, String desctiption) {
 	boolean added = false;
-	if (ls.isLogined(user) && user.getRole() == Role.ADMIN) {
+	if (ls.isLogined(id) && ls.getUserFromId(id).getRole() == Role.ADMIN) {
 	    if (lobrary.contains(book)) {
 		book.setDesctiption(desctiption);
 		added = true;
@@ -333,11 +402,11 @@ class BookAccouting {
 	}
     }
 
-    public void offerBook(User u, Book b) {
-	if (ls.isLogined(u)) {
+    public void offerBook(Integer id, Book b) {
+	if (ls.isLogined(id)) {
 	    for (User us : ls.getAllUsers()) {
 		if (us.getRole() == Role.ADMIN) {
-		    EMailService.sendMail(us, String.format("User %s offer book %s", u.toString(), b.toString()));
+		    EMailService.sendMail(us, String.format("User %s offer book %s", ls.getUserFromId(id), b));
 		}
 	    }
 	}

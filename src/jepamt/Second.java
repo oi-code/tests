@@ -523,10 +523,10 @@ public class Second {
     }
     
     public void mm16() {
-	//too hard
+	
     }
     
     public void oms01() {
-	//and next - too boring
+	
     }
 }

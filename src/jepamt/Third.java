@@ -217,7 +217,6 @@ public class Third {
 	    }
 	}
 	System.out.println("slsb10:\n\tstr: " + str+"\n\tresult: "+arr.size());
-    }
+    }    
     
-    //for resolve last 2 tasks, need relatively long time. I skipped this.
 }
