@@ -40,13 +40,13 @@ public class Six_3_server {
 	init();
 	serverSocket = new ServerSocket(9764);
 
-	System.out.println("Server started");
+	System.out.println("Serverlog: Server started");
 
 	while (!Thread.currentThread().isInterrupted()) {
 	    Socket socket = serverSocket.accept();
 	    SocketThread socketThread = new SocketThread(socket);
 	    exec.execute(socketThread);
-	    System.out.println("Socked accepted");
+	    System.out.println("Serverlog: Socked accepted");
 	}
     }
 
@@ -164,7 +164,7 @@ class SocketThread implements Runnable {
 		break;
 	    }
 	    case "2": {
-		out.println("for exit enter -1. enter id for change:");
+		out.println("for exit enter -1.\nenter id for change:");
 		try {
 		    changeFileById(in.readLine());
 		} catch (Exception e) {
@@ -225,7 +225,7 @@ class SocketThread implements Runnable {
 	 * Document document = db.parse(new InputSource(new StringReader(data)));
 	 */
 	while (true) {
-	    out.println("enter -1 for exit. enter element for change:");
+	    out.println("enter -1 for exit.\nenter element for change:");
 	    String msg = in.readLine();
 	    if (msg.equals("-1")) {
 		break;
@@ -249,10 +249,10 @@ class SocketThread implements Runnable {
 		out.println("you have no acces to change role");
 		break;
 	    }
-	    }
-	    out.println("success");
+	    }	    
 	}
 	db.addOrUpdateData(u);
+	out.println("success");
     }
 
     public void createNewDocument() throws Exception {
