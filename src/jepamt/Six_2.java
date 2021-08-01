@@ -30,12 +30,13 @@ public class Six_2 {
     public static void main(String... args) throws Exception {
 
 	Six_2 s2 = new Six_2();
-	
-	Long date=new Date().getTime();
+
+	Long date = new Date().getTime();
 
 	Note note = new Note("kek", String.valueOf(date), "mail@mail.mail", "ololo");
 
 	s2.saveNote(note);
+
 	s2.search("message", "olo");
 	s2.search("theme", "k");
 	s2.search("email", "@");
@@ -61,29 +62,33 @@ public class Six_2 {
 	// code for save note to file
     }
 
-    private void search(String key, String data){
+    private void search(String key, String data) {
 	try {
-	Field f = Note.class.getDeclaredField(key);
-	f.setAccessible(true);
-	notes.stream().filter(e -> {
-	    try {		
-		String res=(String)f.get(loadNote(e));
-		Pattern pattern=Pattern.compile(data);
-		Matcher mat=pattern.matcher(res);		
-		return mat.find();
-	    } catch (Exception e1) {
-		e1.printStackTrace();
-		return false;
-	    }	    
-	}).forEach(e->{
-	    try {
-		String res=(String)f.get(loadNote(e));
-		System.out.println(res);
-	    } catch (Exception e1) {
-		e1.printStackTrace();
-	    } 
-	});
-	}catch (Exception e) {
+	    Field f = Note.class.getDeclaredField(key);
+	    f.setAccessible(true);
+	    notes.stream().filter(e -> {
+		try {
+		    String res = (String) f.get(loadNote(e));
+		    Pattern pattern = Pattern.compile(data);
+		    Matcher mat = pattern.matcher(res);
+		    return mat.find();
+		} catch (Exception e1) {
+		    e1.printStackTrace();
+		    return false;
+		}
+	    }).forEach(e -> {
+		try {
+		    String res = (String) f.get(loadNote(e));
+		    if (key.equals("creationDate")) {
+			System.out.println(new Date(Long.valueOf(res)));
+		    } else {
+			System.out.println(res);
+		    }
+		} catch (Exception e1) {
+		    e1.printStackTrace();
+		}
+	    });
+	} catch (Exception e) {
 	    System.out.println("not found.");
 	}
     }
