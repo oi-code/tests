@@ -141,6 +141,7 @@ class Port {
 	synchronized (currentLoad) {
 	    if (currentLoad.get() < maxContainerCapacity) {
 		currentLoad.getAndIncrement();
+		//System.err.println("added "+currentLoad.get());
 		return true;
 	    }
 	}
@@ -152,6 +153,7 @@ class Port {
 	synchronized (currentLoad) {
 	    if (currentLoad.get() > 0) {
 		currentLoad.getAndDecrement();
+		//System.err.println("removed "+currentLoad.get());
 		return true;
 	    }
 	}
@@ -254,8 +256,7 @@ class Dock implements Runnable {
 		while (boat.getCurrentLoad() > 0) {
 		    if (port.addContainer()) {
 			boat.removeContainer();
-		    }
-		    if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
+		    }else {
 			break;
 		    }
 		}
@@ -263,8 +264,7 @@ class Dock implements Runnable {
 		while (boat.getCurrentLoad() < boat.getMaxLoad()) {
 		    if (port.removeContainer()) {
 			boat.addContainer();
-		    }
-		    if (port.getCurrentLoad() < 1) {
+		    }else {
 			break;
 		    }
 		}
@@ -274,16 +274,18 @@ class Dock implements Runnable {
 	    } catch (InterruptedException e) {
 		e.printStackTrace();
 	    }
+	    String state="";
 	    if (boat.getCurrentLoad() == 0) {
+		state="unloading FROM boat";
 		boat.setState(false);
 	    } else {
+		state="loading ON boat";
 		boat.setState(true);
-	    }
-	    String state = boat.getState() == true ? "loading ON boat" : "unloading FROM boat";
+	    }	     
 	    System.out.printf(
 		    "Dock id: %d, boatID: %d, startPortLoad: %d,  startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d, afterWorkPortLoad: %d\n",
-		    dockId, boat.getBoatId(), port.getCurrentLoad(), startLoad, state, boat.getMaxLoad(),
-		    boat.getCurrentLoad(), startPortLoad);	    
+		    dockId, boat.getBoatId(), startPortLoad, startLoad, state, boat.getMaxLoad(),
+		    boat.getCurrentLoad(), port.getCurrentLoad());	    
 	    synchronized (port) {
 		port.addBoat(boat);
 		port.notifyAll();
