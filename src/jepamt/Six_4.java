@@ -22,6 +22,7 @@ public class Six_4 {
 class Boat {
     private final int boatId;
     private final int maxLoad;
+
     @Override
     public String toString() {
 	return "Boat [boatId=" + boatId + ", maxLoad=" + maxLoad + ", currentLoad=" + currentLoad + "]";
@@ -114,7 +115,7 @@ class Port {
 		if (!stop) {
 		    Boat boat = new Boat(i++, tlr.nextInt(0, max), max, b);
 		    boats.add(boat);
-		    System.err.println("New boat enter in port:" +boat);
+		    System.err.println("New boat enter in port:" + boat);
 		    synchronized (p) {
 			p.notifyAll();
 		    }
@@ -185,100 +186,106 @@ class Dock implements Runnable {
     @Override
     public void run() {
 	while (!Thread.currentThread().isInterrupted()) {
-	  /*  Boat boat;	    
-	    while ((boat = port.getBoat()) == null) {
-		try {
-		    System.out.printf("dock %d sleep...\n", dockId);
-		    TimeUnit.MILLISECONDS.sleep(200);
-		} catch (InterruptedException e) {
-		    System.out.println(Thread.currentThread().getName() + " interrupted.");
-		    e.printStackTrace();
-		}
-	    }
-	    int startLoad = boat.getCurrentLoad();
-	    if (boat.getState()) {
-		while (boat.getCurrentLoad() > 0) {
-		    if (port.addContainer()) {
-			boat.removeContainer();
-		    }
-		    if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
-			break;
-		    }
-		}
-	    } else {
-		while (boat.getCurrentLoad() < boat.getMaxLoad()) {
-		    if (port.removeContainer()) {
-			boat.addContainer();
-		    }
-		    if (port.getCurrentLoad() <1) {
-			break;
-		    }
-		}
-	    }
-	    try {
-		TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(200, 1001));
-	    } catch (InterruptedException e) {
-		e.printStackTrace();
-	    }
-	    if (boat.getCurrentLoad() == 0) {
-		boat.setState(false);
-	    } else {
-		boat.setState(true);
-	    }
-	    System.out.printf(
-		    "boatID: %d, portLoad: %d, startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d\n",
-		    boat.getBoatId(), port.getCurrentLoad(), startLoad, boat.getState(), boat.getMaxLoad(),
-		    boat.getCurrentLoad());
-	    port.addBoat(boat);*/
-	    Boat boat;	    
-	    while ((boat = port.getBoat()) == null) {
-		try {
-		    System.out.printf("dock %d wait...\n", dockId);
-		    synchronized (port) {
-			port.wait();
-		    }
-		} catch (InterruptedException e) {
-		    System.out.println(Thread.currentThread().getName() + " interrupted.");
-		    e.printStackTrace();
-		}
-	    }
-	    int startPortLoad=port.getCurrentLoad();
-	    int startLoad = boat.getCurrentLoad();
-	    if (boat.getState()) {
-		while (boat.getCurrentLoad() > 0) {
-		    if (port.addContainer()) {
-			boat.removeContainer();
-		    }
-		    if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
-			break;
-		    }
-		}
-	    } else {
-		while (boat.getCurrentLoad() < boat.getMaxLoad()) {
-		    if (port.removeContainer()) {
-			boat.addContainer();
-		    }
-		    if (port.getCurrentLoad() <1) {
-			break;
-		    }
-		}
-	    }
-	    try {
-		TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(200, 1001));
-	    } catch (InterruptedException e) {
-		e.printStackTrace();
-	    }
-	    if (boat.getCurrentLoad() == 0) {
-		boat.setState(false);
-	    } else {
-		boat.setState(true);
-	    }
-	    String state=boat.getState()==true?"loading ON boat":"unloading FROM boat";
-	    System.out.printf("Dock id: %d, boatID: %d, startPortLoad: %d,  startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d, afterWorkPortLoad: %d\n",
-		    dockId, boat.getBoatId(), port.getCurrentLoad(), startLoad, state, boat.getMaxLoad(),
-		    boat.getCurrentLoad(), startPortLoad);
-	    port.addBoat(boat);
+	    /*
+	     * Boat boat;
+	     * while ((boat = port.getBoat()) == null) {
+	     * try {
+	     * System.out.printf("dock %d sleep...\n", dockId);
+	     * TimeUnit.MILLISECONDS.sleep(200);
+	     * } catch (InterruptedException e) {
+	     * System.out.println(Thread.currentThread().getName() + " interrupted.");
+	     * e.printStackTrace();
+	     * }
+	     * }
+	     * int startLoad = boat.getCurrentLoad();
+	     * if (boat.getState()) {
+	     * while (boat.getCurrentLoad() > 0) {
+	     * if (port.addContainer()) {
+	     * boat.removeContainer();
+	     * }
+	     * if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
+	     * break;
+	     * }
+	     * }
+	     * } else {
+	     * while (boat.getCurrentLoad() < boat.getMaxLoad()) {
+	     * if (port.removeContainer()) {
+	     * boat.addContainer();
+	     * }
+	     * if (port.getCurrentLoad() <1) {
+	     * break;
+	     * }
+	     * }
+	     * }
+	     * try {
+	     * TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(200, 1001));
+	     * } catch (InterruptedException e) {
+	     * e.printStackTrace();
+	     * }
+	     * if (boat.getCurrentLoad() == 0) {
+	     * boat.setState(false);
+	     * } else {
+	     * boat.setState(true);
+	     * }
+	     * System.out.printf(
+	     * "boatID: %d, portLoad: %d, startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d\n"
+	     * ,
+	     * boat.getBoatId(), port.getCurrentLoad(), startLoad, boat.getState(),
+	     * boat.getMaxLoad(),
+	     * boat.getCurrentLoad());
+	     * port.addBoat(boat);
+	     */
+	    Boat boat;
 	    synchronized (port) {
+		while ((boat = port.getBoat()) == null) {
+		    try {
+			System.out.printf("dock %d wait...\n", dockId);
+			port.wait();
+
+		    } catch (InterruptedException e) {
+			System.out.println(Thread.currentThread().getName() + " interrupted.");
+			e.printStackTrace();
+		    }
+		}
+	    }
+	    int startPortLoad = port.getCurrentLoad();
+	    int startLoad = boat.getCurrentLoad();
+	    if (boat.getState()) {
+		while (boat.getCurrentLoad() > 0) {
+		    if (port.addContainer()) {
+			boat.removeContainer();
+		    }
+		    if (port.getCurrentLoad() == port.getMaxContainerCapacity()) {
+			break;
+		    }
+		}
+	    } else {
+		while (boat.getCurrentLoad() < boat.getMaxLoad()) {
+		    if (port.removeContainer()) {
+			boat.addContainer();
+		    }
+		    if (port.getCurrentLoad() < 1) {
+			break;
+		    }
+		}
+	    }
+	    try {
+		TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(200, 1001));
+	    } catch (InterruptedException e) {
+		e.printStackTrace();
+	    }
+	    if (boat.getCurrentLoad() == 0) {
+		boat.setState(false);
+	    } else {
+		boat.setState(true);
+	    }
+	    String state = boat.getState() == true ? "loading ON boat" : "unloading FROM boat";
+	    System.out.printf(
+		    "Dock id: %d, boatID: %d, startPortLoad: %d,  startBoatLoad: %d, currentBoatState: %s, boatMaxLoad %d, boatCurrentLoad %d, afterWorkPortLoad: %d\n",
+		    dockId, boat.getBoatId(), port.getCurrentLoad(), startLoad, state, boat.getMaxLoad(),
+		    boat.getCurrentLoad(), startPortLoad);	    
+	    synchronized (port) {
+		port.addBoat(boat);
 		port.notifyAll();
 	    }
 	}
