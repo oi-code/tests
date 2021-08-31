@@ -4,9 +4,9 @@
 	xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
 	version="2.1">
 	<persistence-unit name="try">
+	<provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 		<properties>
-			<property name="javax.persistence.jdbc.driver"
-				value="com.mysql.cj.jdbc.Driver" />
+			<property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver" />
 			<property name="javax.persistence.jdbc.url"
 				value="jdbc:mysql://localhost/test" />
 			<property name="javax.persistence.jdbc.user" value="root" />
@@ -15,10 +15,17 @@
 			<property name="hibernate.show_sql" value="true" />
 			<property name="hibernate.format_sql" value="false" />
 			<property name="hibernate.dialect"
-				value="org.hibernate.dialect.MySQLDialect" />
+				value="org.hibernate.dialect.MySQL5Dialect" />
+				<!-- org.hibernate.dialect.MySQLDialect -->
 			<property
 				name="javax.persistence.schema-generation.database.action"
-				value="none" />
+				value="drop-and-create" />
+				
+			<property name="hibernate.c3p0.min_size" value="50" />
+            <property name="hibernate.c3p0.max_size" value="200" />
+            <property name="hibernate.c3p0.timeout" value="30" />
+            <property name="hibernate.c3p0.max_statements" value="50" />
+            <property name="hibernate.c3p0.idle_test_period" value="120" />
 			<!-- property name="hibernate.use_identifier_rollback" value="true" / -->
 			<!-- property NOT SUPPORTED FOR MySQL name="javax.persistence.schema-generation.create-script-source" 
 				value="CreateScript.sql.txt" / -->
