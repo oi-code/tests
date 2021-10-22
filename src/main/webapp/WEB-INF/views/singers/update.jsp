@@ -18,7 +18,7 @@
 </head>
 <body>
 	<table class="table table-dark table-striped table-bordered align-middle table-sm">
-		<!style="border: 1px solid black; margin-left: auto; margin-right: auto;">
+		<!--style="border: 1px solid black; margin-left: auto; margin-right: auto;"-->
 		<tr><td align="center">
 		<h1>${singer.id}</h1>
 		<h2>${singer.name}</h2>

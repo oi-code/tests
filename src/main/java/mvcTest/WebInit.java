@@ -13,7 +13,7 @@ public class WebInit extends AbstractAnnotationConfigDispatcherServletInitialize
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-	return new Class<?>[] { SecurityConfig.class, DataSourceConfig.class };
+	return new Class<?>[] { SecurityConfig.class, DataSourceConfig.class, WebSocketConfig.class };
     }
 
     @Override

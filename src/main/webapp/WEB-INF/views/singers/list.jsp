@@ -24,8 +24,11 @@
 			<td></td>
 			<td>
 				<form action="singers/new" method="get">
-					<input type="submit" value="create new user" />
+					<input type="submit" value="create new user" />					
 				</form>
+				<form action="singers/websocket" method="get">
+					<input type="submit" value="websocket test"/>
+				</form> 
 			</td>
 			<td></td>
 			<td></td>

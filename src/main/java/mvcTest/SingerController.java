@@ -18,6 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -34,6 +36,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @RequestMapping("/singers")
 @Controller
+@ComponentScan
 public class SingerController {
 
     @Autowired
@@ -111,9 +114,13 @@ public class SingerController {
     @GetMapping(path = "/error")
     public String error() {
 	return "singers/error";
+    }    
+    
+    @GetMapping(path = "/websocket")
+    //just GET request for getting page with websocket code
+    public String webSocket() {
+	return "singers/websocket";
     }
-    
-    
 
     private void setB64code(Singer e) {
 	byte b[] = e.getImage();
