@@ -1,29 +1,34 @@
 package mvcTest;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
-import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.transaction.Transactional;
+import javax.validation.Validator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 @Service("singerService")
+@EnableScheduling
 public class SingerServiceImpl implements SingersService {
+
+    public static long countImagesInDb = 0;
 
     @Autowired
     SingersRepository repository;
+    
+    @Autowired
+    EntityManager em;
 
     @Autowired
-    EntityManagerFactory emf;
+    Validator val;
 
     @Override
     public List<Singer> findAll() {
@@ -49,7 +54,13 @@ public class SingerServiceImpl implements SingersService {
 
     @Override
     public Singer save(Singer singer) {
-	if(singer.getId()==null) {
+	// val.validate(singer);
+
+	if (singer == null) {
+	    return null;
+	}
+
+	if (singer.getId() == null) {
 	    repository.save(singer);
 	    return singer;
 	}
@@ -71,5 +82,17 @@ public class SingerServiceImpl implements SingersService {
     @Override
     public void delete(Long id) {
 	repository.deleteById(id);
-    } 
+    }
+
+    @Scheduled(fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    public void scheduledCount() {
+	countImagesInDb = repository.scheduledCount();
+	// System.out.println(countInDb);
+    }
+
+    @Override
+    public Singer merge(Singer singer) {
+	em.merge(singer);
+	return singer;
+    }
 }

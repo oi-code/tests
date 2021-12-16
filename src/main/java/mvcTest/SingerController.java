@@ -1,27 +1,29 @@
 package mvcTest;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.http.HttpRequest;
 import java.util.Base64;
-import java.util.Iterator;
 import java.util.List;
 
-import javax.imageio.ImageIO;
-import javax.servlet.ServletException;
+import javax.annotation.security.RolesAllowed;
+import javax.faces.context.FacesContext;
+import javax.persistence.EntityManager;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
+import javax.transaction.NotSupportedException;
+import javax.transaction.SystemException;
+import javax.transaction.UserTransaction;
+import javax.validation.ConstraintViolationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,119 +32,118 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.context.support.HttpRequestHandlerServlet;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-
 @RequestMapping("/singers")
-@Controller
 @ComponentScan
+@Controller
 public class SingerController {
 
     @Autowired
     private SingersService service;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String list(Model model) {
+    public String list(HttpSession httpSession, Model model, HttpServletRequest request) {
 	List<Singer> res = service.findAll();
-	res.stream().forEach(e -> {
-	    setB64code(e);
-	});
 	model.addAttribute("list", res);
+	try {
+	    for (Cookie c : request.getCookies()) {
+		System.err.println(c.getName() + " <-> " + c.getValue());
+	    }
+	} catch (Exception e) {
+	    // TODO: handle exception
+	}
+	;
 	return "singers/list";
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public String show(@PathVariable Long id, Model model) {
+    public String show(@PathVariable Long id, HttpSession httpSession, Model model) {
 	Singer s = service.findById(id);
-	setB64code(s);
 	model.addAttribute("singer", s);
 	return "singers/show";
     }
 
     @RequestMapping(value = "/update/{id}", method = RequestMethod.POST)
-    public String update(Singer singer, BindingResult bindingResult, HttpServletRequest request,
-	    RedirectAttributes attributes, Model model, Part part) {
-	model.asMap().clear();
-	setBytesFromRequest(singer, request);
-	service.save(singer);
+    public String update(Singer singer, @PathVariable Long id, HttpSession httpSession,
+	    @RequestPart("miltipartImage") MultipartFile image, HttpServletRequest request) {
+	try {
+	    if (!image.isEmpty()) {
+		singer.setImage(java.util.Base64.getEncoder().encodeToString(image.getBytes()));
+	    } else {
+		// singer.setImage(service.findById(singer.getId()).getImage());
+		singer.setImage(request.getParameter("oldImage"));
+	    }
+	    // singer.setImage(java.util.Base64.getEncoder().encodeToString(image.getBytes()));
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    return "singers/error";
+	}
+	service.merge(singer);
 	return "redirect:/singers/" + singer.getId();
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/update/{id}", method = RequestMethod.GET)
-    public String updateForm(@PathVariable Long id, Model model) {
+    public String updateForm(@PathVariable Long id, HttpSession httpSession, Model model) {
 	Singer s = service.findById(id);
-	if (s == null) {
-	    s = new Singer();
-	} else {
-	    setB64code(s);
-	}
 	model.addAttribute("singer", s);
 	return "singers/update";
     }
 
     @RequestMapping(value = "/new", method = RequestMethod.POST)
-    public String create(Singer singer, BindingResult bindingResult, HttpServletRequest request,
-	    RedirectAttributes attributes, Model model) {
-	setBytesFromRequest(singer, request);
+    public String create(HttpSession httpSession, Singer singer, @RequestPart("miltipartImage") MultipartFile image,
+	    Model model) {
+	try {
+	    if (singer.getImage() == "") {
+		singer.setImage(java.util.Base64.getEncoder().encodeToString(image.getBytes()));
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    return "singers/error";
+	}
 	service.save(singer);
 	return "redirect:/singers/" + singer.getId();
     }
 
     @RequestMapping(value = "/new", method = RequestMethod.GET)
-    public String createForm(Model model) {
+    public String createForm(HttpSession httpSession, Model model) {
 	Singer singer = new Singer();
 	model.addAttribute("singer", singer);
 	return "singers/update";
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.POST)
-    public String delete(@PathVariable Long id, Model model) {
-	System.err.println(id);
+    public String delete(HttpSession httpSession, @PathVariable Long id, Model model) {
+	// System.err.println(id);
 	service.delete(id);
 	return "redirect:/singers";
     }
-    
+
     @GetMapping(value = "/login")
-    public String loginForm(Singer singer, Model model) {
+    public String loginForm(HttpSession httpSession, Singer singer, Model model) {
 	model.addAttribute("singer", singer);
 	return "singers/login";
     }
-    
+
     @GetMapping(path = "/error")
-    public String error() {
+    public String error(HttpSession httpSession) {
 	return "singers/error";
-    }    
-    
+    }
+
     @GetMapping(path = "/websocket")
-    //just GET request for getting page with websocket code
+    // just GET request for getting page with websocket code
     public String webSocket() {
 	return "singers/websocket";
     }
 
-    private void setB64code(Singer e) {
-	byte b[] = e.getImage();
-	if (b == null) {
-	    return;
-	}
-	String result = Base64.getEncoder().encodeToString(b);
-	e.setB64i(result);
-    }
-
-    private void setBytesFromRequest(Singer singer, HttpServletRequest request) {
-	try {
-	    Part part = request.getPart("image");
-	    InputStream content = part.getInputStream();
-	    BufferedImage img = ImageIO.read(content);
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ImageIO.write(img, "png", baos);
-	    // Files.write(Paths.get(System.getProperty("user.home")+"\\desktop\\file.png"),baos.toByteArray());
-	    singer.setImage(baos.toByteArray());
-	} catch (Exception e) {
-	    // e.printStackTrace();
-	    System.err.println("no image");
-	}
+    @PostMapping
+    public String showText() {
+	System.err.println("TEXT");
+	return "singers/list";
     }
 }

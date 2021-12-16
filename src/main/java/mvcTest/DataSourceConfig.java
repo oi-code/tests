@@ -1,5 +1,6 @@
 package mvcTest;
 
+import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -16,6 +17,7 @@ import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
+import javax.transaction.UserTransaction;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -43,19 +45,21 @@ public class DataSourceConfig {
     @Bean
     public DataSource datasource() {
 	ComboPooledDataSource dataSource = new ComboPooledDataSource();
+
 	try {
 	    dataSource.setDriverClass("com.mysql.cj.jdbc.Driver");
-	    dataSource.setJdbcUrl("jdbc:mysql://localhost/test");
-	    dataSource.setUser("root");
-	    dataSource.setPassword("1234");
-	    dataSource.setMaxPoolSize(200);
-	    dataSource.setMinPoolSize(50);
-	    dataSource.setCheckoutTimeout(30);
-	    dataSource.setMaxStatements(50);
-	    dataSource.setMaxIdleTime(120);
-	} catch (Exception e) {
-	    // TODO: handle exception
+	} catch (PropertyVetoException e) {
+	    e.printStackTrace();
 	}
+	dataSource.setJdbcUrl("jdbc:mysql://localhost/test");
+	dataSource.setUser("root");
+	dataSource.setPassword("1234");
+	dataSource.setMaxPoolSize(200);
+	dataSource.setMinPoolSize(50);
+	// dataSource.setCheckoutTimeout(30);
+	dataSource.setMaxStatements(50);
+	dataSource.setMaxIdleTime(120);
+
 	return dataSource;
 	// IF RETURN DEFAULT, LIKE NEXT, WILL BE RETURNED HIKARI DATASOURCE, BECAUSE
 	// AUTOCONFIGURATION
@@ -70,7 +74,7 @@ public class DataSourceConfig {
     private Properties hibernateProperties() {
 	Properties prop = new Properties();
 
-	prop.put("javax.persistence.schema-generation.database.action", "update");
+	prop.put("javax.persistence.schema-generation.database.action", "none");
 	prop.put("hibernate.show_sql", true);
 	prop.put("hibernate.format_sql", false);
 	prop.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
@@ -107,7 +111,7 @@ public class DataSourceConfig {
 	return new TomcatServletWebServerFactory();
     }
 
-    //@PostConstruct
+    // @PostConstruct
     public void init() {
 	try {
 	    setImage();
@@ -117,13 +121,15 @@ public class DataSourceConfig {
 	EntityManagerFactory emf = entityManagerFactory();
 	EntityManager em = emf.createEntityManager();
 	List<Singer> singers = new ArrayList<Singer>();
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 20; i++) {
 	    Singer singer = new Singer();
 	    singer.setName(RandomStringUtils.random(ThreadLocalRandom.current().nextInt(1, 10), true, true));
-	   // singer.setImage(list.get(ThreadLocalRandom.current().nextInt(list.size() - 1)));
+	    // singer.setImage(list.get(ThreadLocalRandom.current().nextInt(list.size() -
+	    // 1)));
 	    singers.add(singer);
 	}
 	singers.stream().forEach(e -> {
+	    e.setImage(Base64.getEncoder().encodeToString(list.remove(list.size() - 1)));
 	    em.persist(e);
 	});
 	em.getTransaction().begin();
@@ -131,7 +137,7 @@ public class DataSourceConfig {
     }
 
     private static void setImage() throws IOException {
-	Path p = Paths.get(SpringMvcTestApplication.args[0]);
+	Path p = Paths.get(/*SpringMvcTestApplication.args[0]*/"");
 	List<Path> paths = new ArrayList<Path>();
 	Files.walkFileTree(p, new HashSet<>(), 1, new FileVisitor<Path>() {
 
@@ -142,9 +148,11 @@ public class DataSourceConfig {
 
 	    @Override
 	    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-		/*if (file.toFile().length() > 3_500_000) {
-		    return FileVisitResult.CONTINUE;
-		}*/
+		/*
+		 * if (file.toFile().length() > 3_500_000) {
+		 * return FileVisitResult.CONTINUE;
+		 * }
+		 */
 		try {
 		    ImageIO.read(file.toFile());
 		    paths.add(file);

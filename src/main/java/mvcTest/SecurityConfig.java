@@ -23,7 +23,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	try {
 	    auth.inMemoryAuthentication().passwordEncoder(new BCryptPasswordEncoder()).withUser("1")
 	    //this fucking string is the encrypted password of value 1. online bcrypt generator. yea.
-		    .password("$2a$12$/RA9pYwo2UhNgNylFIDKBO9p92mk6CHjLxx.IltekYuhqf2i/qwQe").roles("adm");
+		    .password("$2a$12$/RA9pYwo2UhNgNylFIDKBO9p92mk6CHjLxx.IltekYuhqf2i/qwQe").roles("ADMIN");		    
 	} catch (Exception e) {
 	    e.printStackTrace();
 	}
