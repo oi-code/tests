@@ -22,12 +22,12 @@
 		<tr>
 			<td><h:commandButton value="updateImage"
 					onclick="jsf.ajax.request(this, event, {execute:'ololo', render='list'}); return false;)"
-					actionListener="#{singerController.showText}">
+					actionListener="${singerController.showText}">
 				</h:commandButton></td>
 		</tr>
 		<td style="text-align: center; vertical-align: middle">Singer id:
 			${singer.id}.<br /> Singer name: ${singer.name}.<br /> cookies:
-			#{cookie}<br />
+			${cookie}<br />
 
 		</td>
 		<tr>

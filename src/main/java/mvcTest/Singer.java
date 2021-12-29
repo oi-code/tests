@@ -3,34 +3,28 @@ package mvcTest;
 import java.io.Serializable;
 import java.util.Base64;
 
-import javax.persistence.Access;
-import javax.persistence.AccessType;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Basic;
 import javax.persistence.Convert;
 import javax.persistence.Converter;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Lob;
-import javax.persistence.Transient;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 
 @Entity
 public class Singer implements Serializable {
+    /**
+    
+     */
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
     private String name;
 
     @Lob
@@ -74,7 +68,7 @@ class SingerImageCinvertor implements AttributeConverter<String, byte[]> {
 
     @Override
     public byte[] convertToDatabaseColumn(String attribute) {
-	if (attribute == null || attribute.isBlank() || attribute.isEmpty()) {
+	if (attribute == null || attribute.isEmpty() || attribute.isEmpty()) {
 	    return new byte[0];
 	}
 	byte[] result = Base64.getDecoder().decode(attribute);

@@ -1,12 +1,5 @@
 package mvcTest;
 
-import java.util.EnumSet;
-
-import javax.faces.webapp.FacesServlet;
-import javax.servlet.DispatcherType;
-
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -23,21 +16,6 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @EnableAsync
 public class WebConfig implements WebMvcConfigurer {
 
-    @Bean
-    public ServletRegistrationBean servletRegistrationBean() {
-	FacesServlet servlet = new FacesServlet();
-	return new ServletRegistrationBean(servlet, "*.xhtml");
-    }
-
-    /*@Bean
-    public FilterRegistrationBean rewriteFilter() {
-	FilterRegistrationBean rwFilter = new FilterRegistrationBean(new RewriteFilter());
-	rwFilter.setDispatcherTypes(
-		EnumSet.of(DispatcherType.FORWARD, DispatcherType.REQUEST, DispatcherType.ASYNC, DispatcherType.ERROR));
-	rwFilter.addUrlPatterns("/*");
-	return rwFilter;
-    }*/
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 	registry.addResourceHandler("/resources/**").addResourceLocations("/singers/");
@@ -47,7 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
     public InternalResourceViewResolver jspReslover() {
 	InternalResourceViewResolver res = new InternalResourceViewResolver();
 	res.setPrefix("/WEB-INF/views/");
-	res.setSuffix(".xhtml");
+	res.setSuffix(".jsp");
 	res.setOrder(0);
 	return res;
     }

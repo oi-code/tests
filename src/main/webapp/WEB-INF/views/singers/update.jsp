@@ -18,7 +18,7 @@
 		class="table table-dark table-striped table-bordered align-middle table-sm">
 		<!--style="border: 1px solid black; margin-left: auto; margin-right: auto;"-->
 		<tr>
-			<td align="center">
+			<td align="center" place-content="center">
 				<h1>${singer.id}</h1>
 				<h2>${singer.name}</h2>
 				<form method="post" enctype="multipart/form-data">

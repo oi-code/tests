@@ -1,6 +1,5 @@
 package mvcTest;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -12,12 +11,10 @@ import java.util.Properties;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
-import javax.transaction.UserTransaction;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -33,7 +30,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+//import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 @Configuration
 @EnableJpaRepositories
@@ -44,31 +41,33 @@ public class DataSourceConfig {
 
     @Bean
     public DataSource datasource() {
-	ComboPooledDataSource dataSource = new ComboPooledDataSource();
-
-	try {
-	    dataSource.setDriverClass("com.mysql.cj.jdbc.Driver");
-	} catch (PropertyVetoException e) {
-	    e.printStackTrace();
-	}
-	dataSource.setJdbcUrl("jdbc:mysql://localhost/test");
-	dataSource.setUser("root");
-	dataSource.setPassword("1234");
-	dataSource.setMaxPoolSize(200);
-	dataSource.setMinPoolSize(50);
-	// dataSource.setCheckoutTimeout(30);
-	dataSource.setMaxStatements(50);
-	dataSource.setMaxIdleTime(120);
-
-	return dataSource;
+	
+	/*
+	 * ComboPooledDataSource dataSource = new ComboPooledDataSource();
+	 * 
+	 * try {
+	 * dataSource.setDriverClass("com.mysql.cj.jdbc.Driver");
+	 * } catch (PropertyVetoException e) {
+	 * e.printStackTrace();
+	 * }
+	 * dataSource.setJdbcUrl("jdbc:mysql://localhost/test");
+	 * dataSource.setUser("root");
+	 * dataSource.setPassword("1234");
+	 * dataSource.setMaxPoolSize(200);
+	 * dataSource.setMinPoolSize(50);
+	 * // dataSource.setCheckoutTimeout(30);
+	 * dataSource.setMaxStatements(50);
+	 * dataSource.setMaxIdleTime(120);
+	 * 
+	 * 
+	 * return dataSource;
+	 */
 	// IF RETURN DEFAULT, LIKE NEXT, WILL BE RETURNED HIKARI DATASOURCE, BECAUSE
 	// AUTOCONFIGURATION
-	/*
-	 * return
-	 * DataSourceBuilder.create().driverClassName("com.mysql.cj.jdbc.Driver").url(
-	 * "jdbc:mysql://localhost/test")
-	 * .username("root").password("1234").build();
-	 */
+
+	return DataSourceBuilder.create().driverClassName("com.mysql.cj.jdbc.Driver").url("jdbc:mysql://localhost/test")
+		.username("root").password("1234").build();
+
     }
 
     private Properties hibernateProperties() {
@@ -136,8 +135,8 @@ public class DataSourceConfig {
 	em.getTransaction().commit();
     }
 
-    private static void setImage() throws IOException {
-	Path p = Paths.get(/*SpringMvcTestApplication.args[0]*/"");
+    private void setImage() throws IOException {
+	Path p = Paths.get(/* SpringMvcTestApplication.args[0] */"");
 	List<Path> paths = new ArrayList<Path>();
 	Files.walkFileTree(p, new HashSet<>(), 1, new FileVisitor<Path>() {
 

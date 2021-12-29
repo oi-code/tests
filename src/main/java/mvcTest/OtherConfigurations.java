@@ -6,28 +6,18 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
 
-import javax.annotation.PostConstruct;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 
-import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OtherConfigurations {
-
-    @Bean
-    public Validator valodator() {
-	ValidatorFactory fv = Validation.buildDefaultValidatorFactory();
-	return fv.getValidator();
-    }
 
     // @PostConstruct
     public void initialization() {
@@ -86,7 +76,7 @@ public class OtherConfigurations {
 		try {
 		    for (String s : osc.getLines()) {
 			// defaultOut.println("PEPEGA: " + s);
-			text.setText(text.getText() + s + "\n" + "-".repeat(50) + "\n");
+			text.setText(text.getText() + s + "\n" + "-" + "\n");
 			text.setCaretPosition(text.getDocument().getLength() - 1);
 		    }
 		    if (!jframe.isVisible()) {

@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import javax.persistence.EntityManager;
-import javax.validation.Validator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,9 +25,6 @@ public class SingerServiceImpl implements SingersService {
     
     @Autowired
     EntityManager em;
-
-    @Autowired
-    Validator val;
 
     @Override
     public List<Singer> findAll() {
