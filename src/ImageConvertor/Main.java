@@ -1,12 +1,14 @@
 package ImageConvertor;
 
 import java.util.Arrays;
+import java.util.prefs.Preferences;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.UIManager;
 
+import ImageConvertor.views.desktop.AlgorithmSettingsView;
 import ImageConvertor.views.desktop.View;
 
 //import com.formdev.flatlaf.FlatDarkLaf;
@@ -19,9 +21,11 @@ public class Main {
 		} catch (Exception e) {
 		}
 		try {
-			View.getViewInstance();
+			View.getInstance();
+			//new AlgorithmSettingsView();			
 		} catch (Throwable e) {
-			System.exit(0);
+			e.printStackTrace();
+			//System.exit(0);
 		}
 		// String gs=new BufferedReader(new InputStreamReader(System.in)).readLine();
 		// byte[][]arr=new byte[1000*1000][1000*1000];

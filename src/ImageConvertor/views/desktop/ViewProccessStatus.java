@@ -15,6 +15,8 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.swing.ImageIcon;
@@ -40,20 +42,22 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	Controller controller;
 	JTextComponent text;
 	JScrollPane scrollPane;
+	float size = 0f;
 
 	public ViewProccessStatus(Controller controller) {
-		//super(View.getViewInstance(), true);
+		// super(View.getInstance(), false);
 		this.controller = controller;
 		setLayout(new BorderLayout());
 		setTitle("Processing...");
+		Thread.currentThread().setName("process window");
 		// text = (JTextComponent) getTextLabel();
-		add(getTextLabel());
 		add(getButtonAndLoadingImageLabel(), BorderLayout.PAGE_END);
+		add(getTextLabel());
 		setSize(300, 200);
 		setLocationRelativeTo(null);
 		setFocusable(false);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		setAlwaysOnTop(true);
+		// setAlwaysOnTop(true);
 	}
 
 	@Override
@@ -66,7 +70,7 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 				if (nextText == null || "null".equals(nextText)) {
 					continue;
 				}
-				System.out.println(nextText);
+				// System.out.println(nextText);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -78,8 +82,8 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	}
 
 	JComponent getImageLabel() {
-		ImageIcon icon = new ImageIcon("images/ezgif-4-3c6aceb748.gif");
-		icon.setImage(icon.getImage().getScaledInstance(50, 50, Image.SCALE_FAST));
+		ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
+		icon.setImage(icon.getImage().getScaledInstance(140, 40, Image.SCALE_DEFAULT));
 		JLabel label = new JLabel(icon);
 		return label;
 	}
@@ -93,13 +97,12 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	}
 
 	JComponent getTextLabel() {
-
 		JTextArea text = new JTextArea();
+		text.setFont(text.getFont().deriveFont(size));
 		text.setSize(300, 50);
 		text.setFocusable(false);
 		text.setLineWrap(true);
 		text.setWrapStyleWord(true);
-
 		JScrollPane scroll = new JScrollPane(text, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
 				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		// scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -110,16 +113,22 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	}
 
 	JComponent getCancelButton() {
+		/*
+		 * ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
+		 * icon.setImage(icon.getImage().getScaledInstance(140, 40, Image.SCALE_DEFAULT));
+		 * JButton button = new JButton("cancel task", icon);
+		 */
 		JButton button = new JButton();
+		size = button.getFont().getSize();
 		button.setText("Cancel task");
 		button.setFocusable(false);
 		button.setSelected(false);
 		button.setEnabled(true);
 		Color color = button.getBackground();
 		button.addActionListener((e) -> {
-			System.out.println("hi");
 			button.setEnabled(false);
 			button.setBackground(color);
+			controller.cancelTask();
 		});
 		button.addMouseListener(new MouseAdapter() {
 			@Override

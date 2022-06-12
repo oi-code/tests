@@ -10,9 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,13 +28,32 @@ public class WorkerManager {
 	Points[][] searchMatrix;
 	int boundWidth = 0, boundHeight = 0;
 	List<Points> tmp;
-	public int maxRange = 3;
 	List<List<Points>> cur;
 	Points[][] copyPoints;
-	CompletionService<Object[]> service = new ExecutorCompletionService<>(View.EXECUTOR_SERVICE);
-	private int collectedPoints = 0;
+	// CompletionService<Object[]> service = new ExecutorCompletionService<>(View.EXECUTOR_SERVICE);
+	// private int collectedPoints = 0;
+	boolean isCanceled = false;
 
-	public WorkerManager(Controller c) {
+	private int maxRange = 3;
+	private int totalConnectedPointsLimit = 2500;
+	private int limitConnectedPoints = 80;
+	private float rangeRate = 20f;
+	private float weightRate = 1f;
+	private float pathLengthDivider = 9f;
+
+	public WorkerManager(Controller controller, int totalConnectedPointsLimit, int limitConnectedPoints,
+			float rangeRate, float weightRate, float pathLengthDivider, int maxRange) {
+		this(controller);
+		this.controller = controller;
+		this.totalConnectedPointsLimit = totalConnectedPointsLimit;
+		this.limitConnectedPoints = limitConnectedPoints;
+		this.rangeRate = rangeRate;
+		this.weightRate = weightRate;
+		this.pathLengthDivider = pathLengthDivider;
+		this.maxRange = maxRange;
+	}
+
+	private WorkerManager(Controller c) {
 		controller = c;
 		chunkSize = c.getChunkSize();
 		imageWidth = c.getImageWidth();
@@ -47,18 +64,17 @@ public class WorkerManager {
 		while (boundHeight < imageHeight) {
 			boundHeight += chunkSize;
 		}
-		getPath();
-		controller.setChunks(searchMatrix[0].length);
 	}
 
 	private void reloadPointsContainer() {
-		collectedPoints = 0;
+		// collectedPoints = 0;
 		pointsList = controller.getForDrawContainer();
 		pathContainer.clear();
 		for (int i = 0; i < pointsList.size(); i++) {
 			pathContainer.add(getMatrix(i));
 		}
 		fillPathMatrix();
+		controller.setChunks(searchMatrix[0].length);
 	}
 
 	private Points[][] getMatrix(int nextList) {
@@ -81,35 +97,45 @@ public class WorkerManager {
 		return matrix;
 	}
 
-	@SuppressWarnings("unchecked")
-	private void getPath() {
+//	@SuppressWarnings("unchecked")
+	public void getPath() {
 		// reloadPointsContainer();
 		// recursionInit();
 		List<List<Point>> finalList = new ArrayList<>();
-		while (recursionInit()) {
+		Set<Points> cnt = new HashSet<>();
+		while (recursionInit(cnt)) {
+
 			System.out.println("init path creator...");
+			controller.messageExchanger.offer("init path creator...");
+			System.out.println("start create matrix");
+			controller.messageExchanger.offer("start create matrix");
+
+			Edge[][] ajMatrix = createAdjacencyMatrix();
+
+			System.out.println("matrix created, start compute");
+			controller.messageExchanger.offer("matrix created, start compute");
+
+			List<Points> currentIterationBestPath = null;
 			AtomicInteger counter = new AtomicInteger(0);
 			List<Worker> workers = new ArrayList<>();
-			System.out.println("start create matrix");
-			Edge[][] ajMatrix = createAdjacencyMatrix();
-			System.out.println("matrix created, start compute");
-			List<Points> currentIterationBestPath = null;
 			float lgth = Float.MAX_VALUE;
 			Map<Float, List<Edge>> paths = new ConcurrentHashMap<>();
 			int iterations = 0;
-			IntStream.rangeClosed(0, View.N_THREADS - 1).forEach(i -> {
-				Worker w = new Worker(ajMatrix, tmp, controller, 20f, 1f,
+			IntStream.rangeClosed(0, Controller.N_THREADS - 1).forEach(i -> {
+				Worker w = new Worker(ajMatrix, tmp, controller, rangeRate, weightRate,
 						ThreadLocalRandom.current().nextInt(tmp.size()), i, counter, paths);
 				w.start();
 				workers.add(w);
 				counter.incrementAndGet();
 			});
-			while (iterations < 10) {
+			while (iterations < 10 && !isCanceled) {
 				System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
-				while (counter.get() > 0) {
+				controller.messageExchanger
+						.offer(String.format("next iteration started %d, length: %f", iterations, lgth));
+				while (counter.get() > 0 && !isCanceled) {
 					try {
 						for (Worker w : workers) {
-							if (w.getState() == State.WAITING && !w.isWorkDone) {
+							if (w.getState() == State.WAITING && !w.isWorkDone && !isCanceled) {
 								synchronized (w.myMutex) {
 									// System.out.println("notified");
 									w.myMutex.notify();
@@ -121,6 +147,7 @@ public class WorkerManager {
 						e.printStackTrace();
 					}
 				}
+				vaporizeMatrixWeight(ajMatrix);
 				paths.entrySet().stream().forEach(e -> {
 					float length_ = e.getKey();
 					List<Edge> edges = e.getValue();
@@ -148,21 +175,24 @@ public class WorkerManager {
 			 */
 			for (int i = 0; i < workers.size(); i++) {
 				if (workers.get(i).isAlive()) {
-					synchronized (counter) {
+					synchronized (workers.get(i).myMutex) {
 						workers.get(i).interrupt();
-						counter.notifyAll();
+						workers.get(i).myMutex.notify();
 						i = 0;
 					}
 				}
 			}
 			System.out.println("all threads died.");
-
+			controller.messageExchanger.offer("all threads died.");
+			if (isCanceled) {
+				return;
+			}
 			List<Points> pointsConnectedFromAllLayersInView = new ArrayList<>();
-			for (Points p : currentIterationBestPath) {
-				c: for (List<Points> m : controller.getForDrawContainer()) {
-					for (Points pp : m) {
-						if (pp.index == p.index) {
-							pointsConnectedFromAllLayersInView.add(pp);
+			for (Points outer : currentIterationBestPath) {
+				c: for (List<Points> m : controller./*getForDrawContainer()*/getAllLayersContainer()) {
+					for (Points inner : m) {
+						if (inner.index == outer.index) {
+							pointsConnectedFromAllLayersInView.add(outer);
 							continue c;
 						}
 					}
@@ -175,7 +205,7 @@ public class WorkerManager {
 				pathFromCurrentPoints.add(e.startPoint);
 				pathFromCurrentPoints.add(e.endPoint);
 			});
-			if (pathFromCurrentPoints.size() > 20) {
+			if (pathFromCurrentPoints.size() > 5 && !isCanceled) {
 				finalList.add(pathFromCurrentPoints);
 			}
 		}
@@ -219,7 +249,11 @@ public class WorkerManager {
 		 */
 
 		// (List.of(kek));
+		if (isCanceled) {
+			return;
+		}
 		System.out.println("compute end. start draw");
+		controller.messageExchanger.offer("compute end. start draw");
 		PathsImagePreview pip = new PathsImagePreview(controller, finalList);
 		pip.showImage();
 	}
@@ -238,7 +272,7 @@ public class WorkerManager {
 		searchMatrix = result;
 	}
 
-	public void testAction() {
+	public void createSVG() {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("<svg viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">\n", imageWidth,
@@ -283,8 +317,12 @@ public class WorkerManager {
 
 	}
 
-	private boolean recursionInit() {
+	private boolean recursionInit(Set<Points> result) {
+		if (isCanceled) {
+			return false;
+		}
 		System.out.println("rec init");
+		controller.messageExchanger.offer("rec init");
 		reloadPointsContainer();
 		int count = 0;
 		for (int i = 0; i < searchMatrix.length; i++) {
@@ -296,23 +334,26 @@ public class WorkerManager {
 			}
 		}
 		System.out.println("freePoints: " + count);
+		controller.messageExchanger.offer("freePoints: " + count);
 
 		short[] entry = getEntryPoint();
 		int w = entry[1];
 		int h = entry[0];
 		if (h == -1 || w == -1) {
 			System.out.println("CANT FIND ENTRY");
+			controller.messageExchanger.offer("CANT FIND ENTRY");
 			return false;
 		}
-		Set<Points> result = new HashSet<>();
+		// Set<Points> result = new HashSet<>();
 		Points cur = searchMatrix[h][w];
 		cur.locked = true;
 		recursion(cur, result);
 
 		tmp = result.stream().collect(Collectors.toList());
 		System.out.println("counted points: " + result.size());
-		if (result.size() < 80) {
-			return recursionInit();
+		controller.messageExchanger.offer("counted points: " + result.size());
+		if (result.size() < limitConnectedPoints) {
+			return recursionInit(result);
 		}
 		/*
 		 * Points[][] copy = new Points[searchMatrix.length][searchMatrix[0].length];
@@ -322,18 +363,20 @@ public class WorkerManager {
 		 * copyPoints = copy;
 		 */
 		System.out.println("rec finished");
+		controller.messageExchanger.offer("rec finished");
+		result.clear();
 		return true;
 	}
 
 	private void recursion(Points current, Set<Points> result) {
-		collectedPoints++;
-		if (collectedPoints > 2500 || result.size() > 2500) {
+		// collectedPoints++;
+		if (/* collectedPoints > totalConnectedPointsLimit || */result.size() > totalConnectedPointsLimit) {
 			return;
 		}
 		result.add(current);
 		List<Points> container = getRelatives(current.myPosition.y, current.myPosition.x);
 		for (Points p : container) {
-			collectedPoints++;
+			// collectedPoints++;
 			result.add(p);
 			recursion(p, result);
 		}
@@ -434,11 +477,25 @@ public class WorkerManager {
 	}
 
 	private void updateMaxrixWeight(float length, List<Edge> container, Edge[][] ajMatrix) {
-		float addition = 9f / length;
+		float addition = pathLengthDivider / length;
 		for (Edge e : container) {
 			int height = e.heightIndex;
 			int width = e.widthIndex;
 			ajMatrix[height][width].weight += addition;
 		}
+	}
+
+	private void vaporizeMatrixWeight(Edge[][] ajMatrix) {
+		for (int i = 0; i < ajMatrix.length; i++) {
+			for (int j = 0; j < ajMatrix[i].length; j++) {
+				if (ajMatrix[i][j] != null) {
+					ajMatrix[i][j].weight *= 0.62f;
+				}
+			}
+		}
+	}
+
+	public void cancelTask() {
+		isCanceled = true;
 	}
 }

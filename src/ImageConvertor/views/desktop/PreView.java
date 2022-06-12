@@ -3,6 +3,7 @@ package ImageConvertor.views.desktop;
 import java.awt.Graphics;
 
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JPanel;
 
 import ImageConvertor.core.Controller;

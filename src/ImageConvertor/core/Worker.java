@@ -43,7 +43,7 @@ public class Worker extends Thread implements Callable<Object[]> {
 		this.counter = counter;
 		this.paths = paths;
 		this.setDaemon(true);
-		this.setName("ThreadIndex: " + threadIndex);
+		this.setName("ManualThreadWorker №" + threadIndex);
 		/*
 		 * for (Edge[] e : matrix) {
 		 * for (Edge ee : e) {
@@ -105,7 +105,8 @@ public class Worker extends Thread implements Callable<Object[]> {
 
 	@Override
 	public Object[] call() throws Exception {
-		int maxPathLength = matrix[0].length - 1;
+		return null;
+		/*int maxPathLength = matrix[0].length - 1;
 		int iter = 0;
 		List<Points> ans = null;
 		float minLength = Float.MAX_VALUE;
@@ -165,8 +166,8 @@ public class Worker extends Thread implements Callable<Object[]> {
 		 * }
 		 * System.out.println();
 		 * }
-		 */
-		return new Object[] { length, currentEdgesList };
+		 *
+		return new Object[] { length, currentEdgesList };*/
 	}
 
 	// Очистка матрицы

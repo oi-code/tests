@@ -10,8 +10,8 @@ import java.util.List;
 import ImageConvertor.views.desktop.View;
 
 public class GCodeCreator {
-	public static final float PIXEL_SIZE = 0.207f;
-	public static final short[] A4_SHEET = new short[] { /* 210, 297 */200, 280 };
+	private static final float PIXEL_SIZE = 0.207f;
+	private static final short[] A4_SHEET = new short[] { /* 210, 297 */200, 280 };
 	private static final String SERVO_UP = "M5 S0";
 	private static final String SERVO_DOWN = "M3 S30";
 	private static final String SERVO_DELAY = "G4 P0.1";
@@ -72,7 +72,7 @@ public class GCodeCreator {
 		boolean isUp = false;
 		for (List<Point> list : path) {
 			sb.append(servoUpCutPath);
-			isUp=true;
+			isUp = true;
 			Point prev = list.get(0);
 			sb.append(
 					String.format(pathTemplate, prev.getX() * PIXEL_SIZE * scaler, prev.getY() * PIXEL_SIZE * scaler));
@@ -99,7 +99,7 @@ public class GCodeCreator {
 		sb.append(text);
 	}
 
-	public void saveGCode() {
+	private void saveGCode() {
 		try {
 			// Files.deleteIfExists(Paths.get(View.DESKTOP_PATH + "\\layer.txt"));
 			Files.write(Paths.get(View.DESKTOP_PATH + "\\" + controller.getFileName() + ".gcode"),

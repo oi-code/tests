@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -28,9 +29,6 @@ import ImageConvertor.core.WorkerManager;
 public class View extends JFrame {
 
 	public final static Path DESKTOP_PATH = Paths.get(System.getProperty("user.home") + "\\Desktop\\");
-	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
-	public static final ExecutorService EXECUTOR_SERVICE = // Executors.newCachedThreadPool();
-			Executors.newFixedThreadPool(N_THREADS);
 	int size;
 	Controller controller;
 	double workTime;
@@ -44,7 +42,7 @@ public class View extends JFrame {
 
 	private View() {
 		super();
-		stubImage = new StubImage(1);
+		stubImage = new StubImage();
 		controller = new Controller();
 		controller.setChunkSize((short) 3);
 		controller.setFigure("line");
@@ -61,7 +59,7 @@ public class View extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
 
-	public static View getViewInstance() {
+	public static View getInstance() {
 		return INSTANCE;
 	}
 
@@ -364,9 +362,8 @@ public class View extends JFrame {
 	private JComponent getConstructPathButton() {
 		JButton constructPath = new JButton("Construct Path");
 		constructPath.setFocusable(false);
-		constructPath.addActionListener(e -> {
-			WorkerManager path = new WorkerManager(controller);
-			controller.setPathConstructor(path);
+		constructPath.addActionListener(e -> {			
+			controller.createPath();
 		});
 
 		return constructPath;
@@ -376,7 +373,7 @@ public class View extends JFrame {
 		JButton testButton = new JButton("Create SVG");
 		testButton.setFocusable(false);
 		testButton.addActionListener(e -> {
-			controller.getPathConstructor().testAction();
+			controller.createSVG();
 		});
 		return testButton;
 	}
@@ -385,7 +382,7 @@ public class View extends JFrame {
 		JButton gcode = new JButton("GCODE");
 		gcode.setFocusable(false);
 		gcode.addActionListener(e -> {
-			new GCodeCreator(controller);
+			controller.createGCode();			
 		});
 		return gcode;
 	}

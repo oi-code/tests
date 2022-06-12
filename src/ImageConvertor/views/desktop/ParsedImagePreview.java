@@ -33,6 +33,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import ImageConvertor.core.Controller;
+import ImageConvertor.core.Direction;
+import ImageConvertor.core.Points;
 
 @SuppressWarnings(value = "serial")
 public class ParsedImagePreview extends JPanel

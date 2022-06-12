@@ -7,7 +7,7 @@ public class Edge implements Cloneable {
 	public float weight = 0.2f;
 	public int heightIndex = -1;
 	public int widthIndex = -1;
-	public byte[] visited = new byte[View.N_THREADS];
+	public byte[] visited = new byte[Controller.N_THREADS];
 
 	private Edge() {
 	}

@@ -14,15 +14,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
+import ImageConvertor.views.desktop.AlgorithmSettingsView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
-import ImageConvertor.views.desktop.View;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
@@ -33,6 +33,7 @@ public class Controller {
 	private float stroke;
 	private boolean isLoaded;
 	private boolean isProcessed;
+	private boolean isCanceled;
 	private ParsedImagePreview parsedImage;
 	private ImageIcon imageIcon;
 	private String fileName;
@@ -40,11 +41,49 @@ public class Controller {
 	private boolean useRandom;
 	private int layers;
 	private int chunks;
-	private WorkerManager pathConstructor;
-	private List<List<Points>> forDrawContainer = new ArrayList<>();
+	private WorkerManager workerManager;
+	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
+	private List<List<Points>> forDrawContainer = new /* CopyOnWrite */ArrayList<>();
 	private List<List<Points>> allLayersContainer;
 	public List<List<Point>> finalList = new ArrayList<>();
-	public ArrayBlockingQueue<String> messageExchanger = new ArrayBlockingQueue<String>(View.N_THREADS);
+	private ExecutorService execService; // = // Executors.newCachedThreadPool();
+	// Executors.newFixedThreadPool(View.N_THREADS);
+	{
+		getExecutorService();
+	}
+	public ArrayBlockingQueue<String> messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
+	CompletionService<List<Points>> service;
+
+	int totalConnectedPointsLimit = 2500;
+	int limitConnectedPoints = 80;
+	float rangeRate = 20f;
+	float weightRate = 1f;
+	float pathLengthDivider = 9;
+	int maxRange = 3;
+
+	public void setTotalConnectedPointsLimit(int totalConnectedPointsLimit) {
+		this.totalConnectedPointsLimit = totalConnectedPointsLimit;
+	}
+
+	public void setLimitConnectedPoints(int limitConnectedPoints) {
+		this.limitConnectedPoints = limitConnectedPoints;
+	}
+
+	public void setRangeRate(float rangeRate) {
+		this.rangeRate = rangeRate;
+	}
+
+	public void setWeightRate(float weightRate) {
+		this.weightRate = weightRate;
+	}
+
+	public void setPathLengthDivider(float pathLengthDivider) {
+		this.pathLengthDivider = pathLengthDivider;
+	};
+
+	public void setMaxRange(int maxRange) {
+		this.maxRange = maxRange;
+	}
 
 	public int getChunks() {
 		return chunks;
@@ -66,16 +105,36 @@ public class Controller {
 		return allLayersContainer;
 	}
 
-	public void setPathConstructor(WorkerManager pathConstructor) {
-		this.pathConstructor = pathConstructor;
-	}
-
 	public List<List<Points>> getForDrawContainer() {
 		return forDrawContainer;
 	}
 
-	public WorkerManager getPathConstructor() {
-		return pathConstructor;
+	// error something here, dont work if workermanager launched in external thread t
+	public void createPath() {
+		isProcessed = false;
+		isCanceled = false;
+		new AlgorithmSettingsView(this);
+		if (isCanceled) {
+			return;
+		}
+		Thread t = new Thread(() -> {
+			messageExchanger.clear();
+			Thread view = new Thread(new ViewProccessStatus(this));
+			view.setDaemon(true);
+			view.start();
+			workerManager = new WorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
+					weightRate, pathLengthDivider, maxRange);
+			// workerManager = new WorkerManager(this);
+			workerManager.getPath();
+			isProcessed = true;
+		});
+		t.setName("Controller support thread");
+		t.setDaemon(true);
+		t.start();
+	}
+
+	public void createSVG() {
+		workerManager.createSVG();
 	}
 
 	public Controller() {
@@ -134,10 +193,6 @@ public class Controller {
 		return isLoaded;
 	}
 
-	public boolean isProcessed() {
-		return isProcessed;
-	}
-
 	public List<List<Points>> getPointsList() {
 		messageExchanger.clear();
 		Runtime.getRuntime().gc();
@@ -150,7 +205,7 @@ public class Controller {
 			steps.add(start);
 		}
 		List<List<Points>> results = new ArrayList<List<Points>>();
-		CompletionService<List<Points>> service = new ExecutorCompletionService<>(View.EXECUTOR_SERVICE);
+		service = new ExecutorCompletionService<>(execService);
 
 		for (int i = 0; i < steps.size() - 1; i++) {
 			SingleThreadParseImage temParseImage = new SingleThreadParseImage(this);
@@ -183,8 +238,8 @@ public class Controller {
 			}
 		}
 		// exec.shutdownNow();
-		for (Iterator iterator = results.iterator(); iterator.hasNext();) {
-			List<Points> list = (List<Points>) iterator.next();
+		for (Iterator<List<Points>> iterator = results.iterator(); iterator.hasNext();) {
+			List<Points> list = iterator.next();
 			if (list.size() < 1) {
 				iterator.remove();
 			}
@@ -218,8 +273,8 @@ public class Controller {
 	}
 
 	public void showImage() {
+		isProcessed = false;
 		Thread worker = new Thread(() -> {
-			isProcessed=false;
 			messageExchanger.clear();
 			Thread processView = new Thread(new ViewProccessStatus(this));
 			processView.setDaemon(true);
@@ -238,6 +293,9 @@ public class Controller {
 	}
 
 	public void setNullParser() {
+		if (parsedImage == null) {
+			return;
+		}
 		parsedImage.removeListeners();
 		parsedImage = null;
 	}
@@ -248,6 +306,35 @@ public class Controller {
 
 	public void setRandom(boolean useRandom) {
 		this.useRandom = useRandom;
+	}
+
+	public void cancelTask() {
+		if (!execService.isShutdown()) {
+			execService.shutdownNow();
+			getExecutorService();
+		}
+		if (workerManager != null) {
+			workerManager.cancelTask();
+			workerManager = null;
+		}
+
+		isProcessed = true;
+	}
+
+	private void getExecutorService() {
+		execService = Executors.newFixedThreadPool(N_THREADS);
+	}
+
+	public void createGCode() {
+		new GCodeCreator(this);
+	}
+
+	public boolean isProcessed() {
+		return isProcessed;
+	}
+
+	public void setCanceled(boolean isCanceled) {
+		this.isCanceled = isCanceled;
 	}
 
 }
