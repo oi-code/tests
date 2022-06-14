@@ -112,14 +112,14 @@ public class PathsImagePreview extends JPanel
 		g2.fillRect(0, 0, width, height);
 		g2.setColor(Color.GRAY);
 		g2.setStroke(new BasicStroke(controller.getStroke()));
-		controller.finalList.clear();
+		controller.getFinalList().clear();
 		for (List<Point> list : forDrawContainer) {
 			// System.out.println(list.size());
 			layerCount++;
 			repaint();
 			if (!boxes.get(layerCount).isSelected())
 				continue;
-			controller.finalList.add(list);
+			controller.getFinalList().add(list);
 			Point prev = list.get(0);
 			for (Point cur : list) {
 				int prevX = prev.x / count;

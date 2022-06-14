@@ -21,99 +21,67 @@ import java.util.concurrent.Future;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
-import ImageConvertor.views.desktop.AlgorithmSettingsView;
+import ImageConvertor.data.ImageLoader;
+import ImageConvertor.data.State;
+import ImageConvertor.data.Points;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
 
-	private BufferedImage bufferedImage;
-	private short chunkSize;
-	private short imageWidth, imageHeight;
-	private float stroke;
-	private boolean isLoaded;
 	private boolean isProcessed;
 	private boolean isCanceled;
-	private ParsedImagePreview parsedImage;
-	private ImageIcon imageIcon;
-	private String fileName;
-	private String figure;
-	private boolean useRandom;
-	private int layers;
-	private int chunks;
 	private WorkerManager workerManager;
-	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
-	private List<List<Points>> forDrawContainer = new /* CopyOnWrite */ArrayList<>();
-	private List<List<Points>> allLayersContainer;
-	public List<List<Point>> finalList = new ArrayList<>();
 	private ExecutorService execService; // = // Executors.newCachedThreadPool();
 	// Executors.newFixedThreadPool(View.N_THREADS);
-	{
+	private ArrayBlockingQueue<String> messageExchanger;
+	private CompletionService<List<Points>> service;
+	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
+	private static final State STATE = State.getInstance();
+
+	public Controller() {
 		getExecutorService();
-	}
-	public ArrayBlockingQueue<String> messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
-	CompletionService<List<Points>> service;
-
-	int totalConnectedPointsLimit = 2500;
-	int limitConnectedPoints = 80;
-	float rangeRate = 20f;
-	float weightRate = 1f;
-	float pathLengthDivider = 9;
-	int maxRange = 3;
-
-	public void setTotalConnectedPointsLimit(int totalConnectedPointsLimit) {
-		this.totalConnectedPointsLimit = totalConnectedPointsLimit;
-	}
-
-	public void setLimitConnectedPoints(int limitConnectedPoints) {
-		this.limitConnectedPoints = limitConnectedPoints;
-	}
-
-	public void setRangeRate(float rangeRate) {
-		this.rangeRate = rangeRate;
-	}
-
-	public void setWeightRate(float weightRate) {
-		this.weightRate = weightRate;
-	}
-
-	public void setPathLengthDivider(float pathLengthDivider) {
-		this.pathLengthDivider = pathLengthDivider;
-	};
-
-	public void setMaxRange(int maxRange) {
-		this.maxRange = maxRange;
+		messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
 	}
 
 	public int getChunks() {
-		return chunks;
+		return STATE.getChunks();
 	}
 
 	public void setChunks(int chunks) {
-		this.chunks = chunks;
+		STATE.setChunks(chunks);
 	}
 
 	public ParsedImagePreview getParsedImage() {
-		return parsedImage;
+		return STATE.getParsedImage();
 	}
 
 	public void setParsedImage(ParsedImagePreview parsedImage) {
-		this.parsedImage = parsedImage;
+		STATE.setParsedImage(parsedImage);
 	}
 
 	public List<List<Points>> getAllLayersContainer() {
-		return allLayersContainer;
+		return STATE.getAllLayersContainer();
 	}
 
 	public List<List<Points>> getForDrawContainer() {
-		return forDrawContainer;
+		return STATE.getForDrawContainer();
 	}
 
-	// error something here, dont work if workermanager launched in external thread t
-	public void createPath() {
+	public void createPath(List<Float> settings) {
 		isProcessed = false;
 		isCanceled = false;
-		new AlgorithmSettingsView(this);
+		if (settings.size() < 5) {
+			isCanceled = true;
+			isProcessed = true;
+			return;
+		}
+		int totalConnectedPointsLimit = settings.get(0).intValue();
+		int limitConnectedPoints = settings.get(1).intValue();
+		float rangeRate = settings.get(2).floatValue();
+		float weightRate = settings.get(3).floatValue();
+		float pathLengthDivider = settings.get(4).floatValue();
+		int maxRange = settings.get(5).intValue();
 		if (isCanceled) {
 			return;
 		}
@@ -124,7 +92,6 @@ public class Controller {
 			view.start();
 			workerManager = new WorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
 					weightRate, pathLengthDivider, maxRange);
-			// workerManager = new WorkerManager(this);
 			workerManager.getPath();
 			isProcessed = true;
 		});
@@ -137,66 +104,66 @@ public class Controller {
 		workerManager.createSVG();
 	}
 
-	public Controller() {
-	}
-
 	public int getLayers() {
-		return layers;
+		return STATE.getLayers();
 	}
 
 	public void setLayers(int layers) {
-		this.layers = layers;
+		STATE.setLayers(layers);
 	}
 
 	public void setFigure(String figure) {
-		this.figure = figure;
+		STATE.setFigure(figure);
 	}
 
 	public String getFigure() {
-		return figure;
+		return STATE.getFigure();
 	}
 
 	public String getFileName() {
 		String resFileName = "";
-		resFileName = fileName + "_";
+		resFileName = STATE.getFileName() + "_";
 		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.ENGLISH);
 		resFileName += sdf.format(new Date()).toString() + resFileName;
 		return resFileName;
 	}
 
 	public void setChunkSize(short chunkSize) {
-		this.chunkSize = chunkSize;
+		STATE.setChunkSize(chunkSize);
 	}
 
 	public void setStroke(float stroke) {
-		this.stroke = stroke;
+		STATE.setStroke(stroke);
 	}
 
 	public void loadImage() {
 		ImageLoader imageLoader = new ImageLoader();
-		bufferedImage = imageLoader.loadImage();
-		if (bufferedImage == null)
+
+		BufferedImage img = imageLoader.loadImage();
+		if (img == null) {
 			return;
-		fileName = imageLoader.getPath().getFileName().toString().substring(0,
-				imageLoader.getPath().getFileName().toString().lastIndexOf("."));
-		imageWidth = (short) bufferedImage.getWidth();
-		imageHeight = (short) bufferedImage.getHeight();
-		imageIcon = new ImageIcon(bufferedImage);
-		isLoaded = true;
+		}
+		STATE.setBufferedImage(img);
+		STATE.setFileName(imageLoader.getPath().getFileName().toString().substring(0,
+				imageLoader.getPath().getFileName().toString().lastIndexOf(".")));
+		STATE.setImageWidth((short) img.getWidth());
+		STATE.setImageHeight((short) img.getHeight());
+		STATE.setImageIcon(new ImageIcon(img));
+		STATE.setLoaded(true);
 	}
 
 	public ImageIcon getImageIcon() {
-		return imageIcon;
+		return STATE.getImageIcon();
 	}
 
 	public boolean isLoaded() {
-		return isLoaded;
+		return STATE.isLoaded();
 	}
 
-	public List<List<Points>> getPointsList() {
+	private void getPointsList() {
 		messageExchanger.clear();
 		Runtime.getRuntime().gc();
-		float lumStep = 1f / layers;
+		float lumStep = 1f / STATE.getLayers();
 		float start = 0f;
 		List<Float> steps = new ArrayList<>();
 		steps.add(start);
@@ -234,10 +201,8 @@ public class Controller {
 				JOptionPane.showMessageDialog(null,
 						"Fatal Error:\n" + e.getCause().getMessage() + ".\nPress \"OK\" to exit.", "Exception occured",
 						JOptionPane.ERROR_MESSAGE);
-				// System.exit(0);
 			}
 		}
-		// exec.shutdownNow();
 		for (Iterator<List<Points>> iterator = results.iterator(); iterator.hasNext();) {
 			List<Points> list = iterator.next();
 			if (list.size() < 1) {
@@ -247,29 +212,28 @@ public class Controller {
 		Collections.sort(results, (o1, o2) -> {
 			return Float.compare(o2.get(0).layer, o1.get(0).layer);
 		});
-
-		allLayersContainer = results;
-		return results;
+		STATE.setAllLayersContainer(results);
 	}
 
 	public short getChunkSize() {
-		return chunkSize;
+		return // chunkSize;
+		STATE.getChunkSize();
 	}
 
 	public float getStroke() {
-		return stroke;
+		return STATE.getStroke();
 	}
 
 	public short getImageWidth() {
-		return imageWidth;
+		return STATE.getImageWidth();
 	}
 
 	public short getImageHeight() {
-		return imageHeight;
+		return STATE.getImageHeight();
 	}
 
 	public BufferedImage getBufferedImage() {
-		return bufferedImage;
+		return STATE.getBufferedImage();
 	}
 
 	public void showImage() {
@@ -280,8 +244,8 @@ public class Controller {
 			processView.setDaemon(true);
 			processView.start();
 			getPointsList();
-			parsedImage = new ParsedImagePreview(this);
-			parsedImage.showImage();
+			STATE.setParsedImage(new ParsedImagePreview(this));
+			STATE.getParsedImage().showImage();
 			isProcessed = true;
 		});
 		worker.setDaemon(true);
@@ -289,23 +253,24 @@ public class Controller {
 	}
 
 	public void saveImage() {
-		parsedImage.saveImage();
+		STATE.getParsedImage().saveImage();
 	}
 
 	public void setNullParser() {
-		if (parsedImage == null) {
+		if (STATE.getParsedImage() == null) {
 			return;
 		}
-		parsedImage.removeListeners();
-		parsedImage = null;
+		STATE.getParsedImage().removeListeners();
+		STATE.setParsedImage(null);
+
 	}
 
 	public boolean isRandom() {
-		return useRandom;
+		return STATE.isUseRandom();
 	}
 
 	public void setRandom(boolean useRandom) {
-		this.useRandom = useRandom;
+		STATE.setUseRandom(useRandom);
 	}
 
 	public void cancelTask() {
@@ -335,6 +300,18 @@ public class Controller {
 
 	public void setCanceled(boolean isCanceled) {
 		this.isCanceled = isCanceled;
+	}
+
+	public List<List<Point>> getFinalList() {
+		return STATE.getFinalList();
+	}
+
+	public String pollMessage() {
+		return messageExchanger.poll();
+	}
+
+	public void offerMessage(String string) {
+		messageExchanger.offer(string);
 	}
 
 }

@@ -17,6 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import ImageConvertor.data.Direction;
+import ImageConvertor.data.Edge;
+import ImageConvertor.data.Points;
 import ImageConvertor.views.desktop.PathsImagePreview;
 import ImageConvertor.views.desktop.View;
 
@@ -106,14 +109,14 @@ public class WorkerManager {
 		while (recursionInit(cnt)) {
 
 			System.out.println("init path creator...");
-			controller.messageExchanger.offer("init path creator...");
+			controller.offerMessage("init path creator...");
 			System.out.println("start create matrix");
-			controller.messageExchanger.offer("start create matrix");
+			controller.offerMessage("start create matrix");
 
 			Edge[][] ajMatrix = createAdjacencyMatrix();
 
 			System.out.println("matrix created, start compute");
-			controller.messageExchanger.offer("matrix created, start compute");
+			controller.offerMessage("matrix created, start compute");
 
 			List<Points> currentIterationBestPath = null;
 			AtomicInteger counter = new AtomicInteger(0);
@@ -130,8 +133,7 @@ public class WorkerManager {
 			});
 			while (iterations < 10 && !isCanceled) {
 				System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
-				controller.messageExchanger
-						.offer(String.format("next iteration started %d, length: %f", iterations, lgth));
+				controller.offerMessage(String.format("next iteration started %d, length: %f", iterations, lgth));
 				while (counter.get() > 0 && !isCanceled) {
 					try {
 						for (Worker w : workers) {
@@ -183,13 +185,13 @@ public class WorkerManager {
 				}
 			}
 			System.out.println("all threads died.");
-			controller.messageExchanger.offer("all threads died.");
+			controller.offerMessage("all threads died.");
 			if (isCanceled) {
 				return;
 			}
 			List<Points> pointsConnectedFromAllLayersInView = new ArrayList<>();
 			for (Points outer : currentIterationBestPath) {
-				c: for (List<Points> m : controller./*getForDrawContainer()*/getAllLayersContainer()) {
+				c: for (List<Points> m : controller./* getForDrawContainer() */getAllLayersContainer()) {
 					for (Points inner : m) {
 						if (inner.index == outer.index) {
 							pointsConnectedFromAllLayersInView.add(outer);
@@ -253,7 +255,7 @@ public class WorkerManager {
 			return;
 		}
 		System.out.println("compute end. start draw");
-		controller.messageExchanger.offer("compute end. start draw");
+		controller.offerMessage("compute end. start draw");
 		PathsImagePreview pip = new PathsImagePreview(controller, finalList);
 		pip.showImage();
 	}
@@ -289,7 +291,7 @@ public class WorkerManager {
 		 * path.add(temp);
 		 * });
 		 */
-		List<List<Point>> path = controller.finalList;
+		List<List<Point>> path = controller.getFinalList();
 
 		// stroke-width=\"0.1\" stroke-opacity=\"1\"
 
@@ -322,7 +324,7 @@ public class WorkerManager {
 			return false;
 		}
 		System.out.println("rec init");
-		controller.messageExchanger.offer("rec init");
+		controller.offerMessage("rec init");
 		reloadPointsContainer();
 		int count = 0;
 		for (int i = 0; i < searchMatrix.length; i++) {
@@ -334,14 +336,14 @@ public class WorkerManager {
 			}
 		}
 		System.out.println("freePoints: " + count);
-		controller.messageExchanger.offer("freePoints: " + count);
+		controller.offerMessage("freePoints: " + count);
 
 		short[] entry = getEntryPoint();
 		int w = entry[1];
 		int h = entry[0];
 		if (h == -1 || w == -1) {
 			System.out.println("CANT FIND ENTRY");
-			controller.messageExchanger.offer("CANT FIND ENTRY");
+			controller.offerMessage("CANT FIND ENTRY");
 			return false;
 		}
 		// Set<Points> result = new HashSet<>();
@@ -351,7 +353,7 @@ public class WorkerManager {
 
 		tmp = result.stream().collect(Collectors.toList());
 		System.out.println("counted points: " + result.size());
-		controller.messageExchanger.offer("counted points: " + result.size());
+		controller.offerMessage("counted points: " + result.size());
 		if (result.size() < limitConnectedPoints) {
 			return recursionInit(result);
 		}
@@ -363,7 +365,7 @@ public class WorkerManager {
 		 * copyPoints = copy;
 		 */
 		System.out.println("rec finished");
-		controller.messageExchanger.offer("rec finished");
+		controller.offerMessage("rec finished");
 		result.clear();
 		return true;
 	}

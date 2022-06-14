@@ -38,7 +38,7 @@ public class GCodeCreator {
 		 * path.add(temp);
 		 * });
 		 */
-		path = controller.finalList;
+		path = controller.getFinalList();
 		sb = new StringBuilder();
 		width = controller.getImageWidth();
 		height = controller.getImageHeight();

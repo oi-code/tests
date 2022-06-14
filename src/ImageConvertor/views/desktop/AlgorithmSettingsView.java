@@ -2,7 +2,11 @@ package ImageConvertor.views.desktop;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -28,8 +32,9 @@ import javax.swing.text.NumberFormatter;
 import ImageConvertor.core.Controller;
 
 public class AlgorithmSettingsView extends JDialog {
-	
+
 	Controller controller;
+	List<Float>settings;
 
 	AbstractFormatterFactory formatter = new AbstractFormatterFactory() {
 		@Override
@@ -48,9 +53,17 @@ public class AlgorithmSettingsView extends JDialog {
 
 	public AlgorithmSettingsView(Controller c) {
 		super(View.getInstance(), true);
-		this.controller=c;
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				super.windowClosed(e);
+				controller.setCanceled(true);
+			}
+
+		});
+		this.controller = c;
 		setTitle("alg settings");
-		setLayout(new GridLayout(12, 2));
+		setLayout(new GridLayout(8, 2));
 		add(getTotalConnectedLimitPoints());
 		add(getConnectedLimitPoints());
 		add(getRangeRate());
@@ -58,12 +71,13 @@ public class AlgorithmSettingsView extends JDialog {
 		add(getPathDivider());
 		add(getMaxRange());
 		add(getRangeDelimiter());
-		add(getOkButton());
-		add(getCancelButton());
-		setLocationRelativeTo(null);
+		add(getOkandCancelButton());
+		// setLocationRelativeTo(null);
+		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
+		setLocation((int)(d.getWidth()/2-150), (int)(d.getHeight()/2-150));
 		setSize(300, 300);
 		setVisible(true);
-		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		// setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 	}
 
 	JComponent getTotalConnectedLimitPoints() {
@@ -118,7 +132,7 @@ public class AlgorithmSettingsView extends JDialog {
 
 		return container;
 	}
-	
+
 	JComponent getPathDivider() {
 		JPanel container = new JPanel();
 		container.setLayout(new GridLayout(1, 2));
@@ -171,9 +185,7 @@ public class AlgorithmSettingsView extends JDialog {
 
 		return container;
 	}
-	
 
-	
 	JComponent getRangeDelimiter() {
 		JPanel container = new JPanel();
 		container.setLayout(new GridLayout(1, 2));
@@ -191,41 +203,44 @@ public class AlgorithmSettingsView extends JDialog {
 		return container;
 	}
 
-	JComponent getOkButton() {
-		JButton button = new JButton("start");
-		button.addActionListener((e) -> {
-			List<Float>temp=new ArrayList<>();
+	JComponent getOkandCancelButton() {
+		JPanel container = new JPanel();
+		container.setLayout(new GridLayout(1, 2));
+
+		JButton ok = new JButton("start");
+		ok.addActionListener((e) -> {
+			List<Float> temp = new ArrayList<>();
 			for (Component c : getContentPane().getComponents()) {
 				if (c instanceof JPanel jp) {
 					for (Component cc : jp.getComponents()) {
 						if (cc instanceof JFormattedTextField jtf) {
-							//System.out.println(jtf.getValue());
+							// System.out.println(jtf.getValue());
 							temp.add(Float.valueOf(jtf.getValue().toString()));
 						}
 					}
 				}
 			}
-			controller.setTotalConnectedPointsLimit((int)temp.get(0).floatValue());
-			controller.setLimitConnectedPoints((int)temp.get(1).floatValue());
-			controller.setRangeRate(temp.get(2));
-			controller.setWeightRate(temp.get(3));
-			controller.setPathLengthDivider(temp.get(4));
-			controller.setMaxRange((int)temp.get(5).floatValue());
-			for(float f:temp) {
+			settings=temp;
+			for (float f : temp) {
 				System.out.println(f);
 			}
 			dispose();
 		});
-		return button;
-	}
 
-	JComponent getCancelButton() {
-		JButton button = new JButton("cancel");
-		button.addActionListener((e) -> {
+		JButton cancel = new JButton("cancel");
+		cancel.addActionListener((e) -> {
 			controller.setCanceled(true);
 			this.dispose();
 		});
-		return button;
+
+		container.add(ok);
+		container.add(cancel);
+
+		return container;
+	}
+
+	public List<Float> getSettings() {
+		return settings;
 	}
 
 }

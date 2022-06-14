@@ -15,6 +15,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import ImageConvertor.data.Edge;
+import ImageConvertor.data.Points;
+import ImageConvertor.data.ValuesContainer;
+
 public class Worker extends Thread implements Callable<Object[]> {
 
 	Edge[][] matrix;

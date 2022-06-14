@@ -1,5 +1,6 @@
-package ImageConvertor.core;
+package ImageConvertor.data;
 
+import ImageConvertor.core.Controller;
 import ImageConvertor.views.desktop.View;
 
 public class Edge implements Cloneable {

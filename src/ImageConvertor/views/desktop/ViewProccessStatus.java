@@ -45,7 +45,7 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	float size = 0f;
 
 	public ViewProccessStatus(Controller controller) {
-		// super(View.getInstance(), false);
+		//super(View.getInstance(), ModalityType.TOOLKIT_MODAL);
 		this.controller = controller;
 		setLayout(new BorderLayout());
 		setTitle("Processing...");
@@ -66,7 +66,7 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 		while (!Thread.currentThread().isInterrupted() && !controller.isProcessed()) {
 			String nextText = "";
 			try {
-				nextText = controller.messageExchanger.poll();
+				nextText = controller.pollMessage();
 				if (nextText == null || "null".equals(nextText)) {
 					continue;
 				}

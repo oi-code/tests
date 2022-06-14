@@ -6,14 +6,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -22,8 +18,6 @@ import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 
 import ImageConvertor.core.Controller;
-import ImageConvertor.core.GCodeCreator;
-import ImageConvertor.core.WorkerManager;
 
 @SuppressWarnings(value = "serial")
 public class View extends JFrame {
@@ -362,8 +356,9 @@ public class View extends JFrame {
 	private JComponent getConstructPathButton() {
 		JButton constructPath = new JButton("Construct Path");
 		constructPath.setFocusable(false);
-		constructPath.addActionListener(e -> {			
-			controller.createPath();
+		constructPath.addActionListener(e -> {
+			List<Float>settings=new AlgorithmSettingsView(controller).getSettings();
+			controller.createPath(settings);
 		});
 
 		return constructPath;
@@ -382,7 +377,7 @@ public class View extends JFrame {
 		JButton gcode = new JButton("GCODE");
 		gcode.setFocusable(false);
 		gcode.addActionListener(e -> {
-			controller.createGCode();			
+			controller.createGCode();
 		});
 		return gcode;
 	}

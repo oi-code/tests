@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import ImageConvertor.data.Direction;
+import ImageConvertor.data.Points;
+
 class SingleThreadParseImage {
 
 	protected BufferedImage img;

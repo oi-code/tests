@@ -1,4 +1,4 @@
-package ImageConvertor.core;
+package ImageConvertor.data;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
