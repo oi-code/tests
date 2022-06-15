@@ -53,7 +53,7 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 		// text = (JTextComponent) getTextLabel();
 		add(getButtonAndLoadingImageLabel(), BorderLayout.PAGE_END);
 		add(getTextLabel());
-		setSize(300, 200);
+		setSize(500, 200);
 		setLocationRelativeTo(null);
 		setFocusable(false);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);

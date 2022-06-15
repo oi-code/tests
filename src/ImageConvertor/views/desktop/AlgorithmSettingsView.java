@@ -34,18 +34,18 @@ import ImageConvertor.core.Controller;
 public class AlgorithmSettingsView extends JDialog {
 
 	Controller controller;
-	List<Float>settings;
+	List<Float> settings;
 
 	AbstractFormatterFactory formatter = new AbstractFormatterFactory() {
 		@Override
 		public AbstractFormatter getFormatter(JFormattedTextField tf) {
 			NumberFormat f = DecimalFormat.getInstance();
 			f.setMinimumFractionDigits(1);
-			f.setMaximumFractionDigits(2);
+			f.setMaximumFractionDigits(3);
 			f.setRoundingMode(RoundingMode.HALF_UP);
 			InternationalFormatter iff = new InternationalFormatter(f);
 			iff.setAllowsInvalid(false);
-			iff.setMinimum(1f);
+			iff.setMinimum(0f);
 			iff.setMaximum(Float.MAX_VALUE);
 			return iff;
 		}
@@ -63,7 +63,6 @@ public class AlgorithmSettingsView extends JDialog {
 		});
 		this.controller = c;
 		setTitle("alg settings");
-		setLayout(new GridLayout(8, 2));
 		add(getTotalConnectedLimitPoints());
 		add(getConnectedLimitPoints());
 		add(getRangeRate());
@@ -71,10 +70,14 @@ public class AlgorithmSettingsView extends JDialog {
 		add(getPathDivider());
 		add(getMaxRange());
 		add(getRangeDelimiter());
+		add(getIterationns());
+		add(getVaporizeRate());
 		add(getOkandCancelButton());
+		int size=getContentPane().getComponents().length;
+		setLayout(new GridLayout(size, 2));
 		// setLocationRelativeTo(null);
 		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-		setLocation((int)(d.getWidth()/2-150), (int)(d.getHeight()/2-150));
+		setLocation((int) (d.getWidth() / 2 - 150), (int) (d.getHeight() / 2 - 150));
 		setSize(300, 300);
 		setVisible(true);
 		// setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -191,11 +194,45 @@ public class AlgorithmSettingsView extends JDialog {
 		container.setLayout(new GridLayout(1, 2));
 
 		JLabel text = new JLabel();
-		text.setText("max delimiter range");
+		text.setText("inital distance delimiter");
 		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 
 		JFormattedTextField input = new JFormattedTextField(formatter);
 		input.setValue(50f);
+
+		container.add(text);
+		container.add(input);
+
+		return container;
+	}
+
+	JComponent getIterationns() {
+		JPanel container = new JPanel();
+		container.setLayout(new GridLayout(1, 2));
+
+		JLabel text = new JLabel();
+		text.setText("iterations");
+		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+
+		JFormattedTextField input = new JFormattedTextField(formatter);
+		input.setValue(10f);
+
+		container.add(text);
+		container.add(input);
+
+		return container;
+	}
+	
+	JComponent getVaporizeRate() {
+		JPanel container = new JPanel();
+		container.setLayout(new GridLayout(1, 2));
+
+		JLabel text = new JLabel();
+		text.setText("vaporize rate");
+		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+
+		JFormattedTextField input = new JFormattedTextField(formatter);
+		input.setValue(0.62f);
 
 		container.add(text);
 		container.add(input);
@@ -220,7 +257,7 @@ public class AlgorithmSettingsView extends JDialog {
 					}
 				}
 			}
-			settings=temp;
+			settings = temp;
 			for (float f : temp) {
 				System.out.println(f);
 			}

@@ -1,20 +1,12 @@
 package ImageConvertor.core;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import ImageConvertor.data.Edge;
 import ImageConvertor.data.Points;
 import ImageConvertor.data.ValuesContainer;
@@ -47,16 +39,7 @@ public class Worker extends Thread implements Callable<Object[]> {
 		this.counter = counter;
 		this.paths = paths;
 		this.setDaemon(true);
-		this.setName("ManualThreadWorker №" + threadIndex);
-		/*
-		 * for (Edge[] e : matrix) {
-		 * for (Edge ee : e) {
-		 * System.out.print(ee.heldedIndex + " ");
-		 * }
-		 * System.out.println();
-		 * }
-		 */
-
+		this.setName("manual-thread-worker-" + threadIndex);
 	}
 
 	@Override
@@ -98,8 +81,13 @@ public class Worker extends Thread implements Callable<Object[]> {
 				} else {
 					curHeight = nextEdge.heightIndex;
 				}
-				length += nextEdge.distanceBetweenPoints;
+				//length += nextEdge.distanceBetweenPoints;
 				currentCountOfPoints++;
+			}
+			for(int i=1;i<currentEdgesList.size();i++) {
+				Point p1=pointsContainer.get(currentEdgesList.get(i-1).heightIndex).startPoint;
+				Point p2=pointsContainer.get(currentEdgesList.get(i).heightIndex).startPoint;
+				length+=p1.distance(p2);
 			}
 			paths.put(length, currentEdgesList);
 			counter.decrementAndGet();
@@ -109,7 +97,7 @@ public class Worker extends Thread implements Callable<Object[]> {
 
 	@Override
 	public Object[] call() throws Exception {
-		return null;
+		throw new UnsupportedOperationException("NOT DEVELOPED");
 		/*int maxPathLength = matrix[0].length - 1;
 		int iter = 0;
 		List<Points> ans = null;
@@ -221,11 +209,7 @@ public class Worker extends Thread implements Callable<Object[]> {
 		}
 		for (ValuesContainer a : curWishList) {
 			a.currentChanceToGoHere = a.currentWishToGoHere / ans;
-			// chance += a.currentChanceToGoHere;
-			// System.out.print(a.heightIndex + ":"+a.widthIndex+" ");
 		}
-		// System.out.println();
-		// System.out.println("SUM:" + ans);
 		return curWishList;
 	}
 

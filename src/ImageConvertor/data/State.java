@@ -18,9 +18,10 @@ public class State {
 	private ImageIcon imageIcon;
 	private String fileName;
 	private String figure;
-	private List<List<Points>> forDrawContainer = new ArrayList<>();
 	private List<List<Points>> allLayersContainer;
-	private List<List<Point>> finalList = new ArrayList<>();
+	private List<List<Points>> forDrawContainer = new ArrayList<>();
+	private List<List<Point>> chosedLayers = new ArrayList<>();
+	private List<List<Point>> pathPointsList;
 	private boolean isLoaded;
 	private boolean useRandom;
 	private int layers;
@@ -147,12 +148,12 @@ public class State {
 		this.allLayersContainer = allLayersContainer;
 	}
 
-	public List<List<Point>> getFinalList() {
-		return finalList;
+	public List<List<Point>> getChosedLayers() {
+		return chosedLayers;
 	}
 
-	public void setFinalList(List<List<Point>> finalList) {
-		this.finalList = finalList;
+	public void setChosedLayers(List<List<Point>> finalList) {
+		this.chosedLayers = finalList;
 	}
 
 	public boolean isLoaded() {
@@ -161,6 +162,14 @@ public class State {
 
 	public void setLoaded(boolean isLoaded) {
 		this.isLoaded = isLoaded;
+	}
+
+	public List<List<Point>> getPathsPointList() {
+		return pathPointsList;
+	}
+
+	public void setPathsPointList(List<List<Point>> finalList) {
+		pathPointsList = finalList;
 	}
 
 }

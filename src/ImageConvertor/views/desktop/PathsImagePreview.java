@@ -50,10 +50,10 @@ public class PathsImagePreview extends JPanel
 	int count = 1;
 	int layerCount = -1;
 
-	public PathsImagePreview(Controller controllerr, List<List<Point>> forDrawContainer) {
+	public PathsImagePreview(Controller controllerr) {
 		controller = controllerr;
 		// forDraw = controller.getPointsList();
-		this.forDrawContainer = forDrawContainer;
+		this.forDrawContainer = controller.getPathsPointList();
 		s = controller.getChunkSize();
 		figure = controller.getFigure();
 		width = controller.getImageWidth();
@@ -61,13 +61,6 @@ public class PathsImagePreview extends JPanel
 		j = new JFrame();
 		j.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		j.setTitle("Preview image");
-		/*
-		 * if (width > height) {
-		 * j.setSize(720, 480);
-		 * } else {
-		 * j.setSize(480, 720);
-		 * }
-		 */
 		j.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
 		j.setLocationRelativeTo(null);
 
@@ -77,10 +70,8 @@ public class PathsImagePreview extends JPanel
 		layers.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		layers.setLocation(j.getLocation().x - 210, j.getLocation().y);
-		// layers.setLocationRelativeTo(null);
-		// layers.setLayout(new GridLayout(forDraw.size(), 1));
 		layers.setLayout(new GridLayout(10, 3));
-		layers.setSize(225, 300);// (forDraw.size()+1)*40);
+		layers.setSize(225, 300);
 		for (int i = 0; i < forDrawContainer.size(); i++) {
 			JCheckBox temp = new JCheckBox("Path " + (i + 1));
 			temp.setFocusable(false);
@@ -135,16 +126,6 @@ public class PathsImagePreview extends JPanel
 	}
 
 	public void showImage() {
-		/*
-		 * BufferedImage img = new BufferedImage(controller.getImageWidth(),
-		 * controller.getImageHeight(),
-		 * BufferedImage.TYPE_INT_ARGB);
-		 * Graphics2D g2 = img.createGraphics();
-		 * setSize(controller.getImageWidth(), controller.getImageHeight());
-		 * printAll(g2);
-		 * g2.dispose();
-		 * new LayeredPaneExample(img);
-		 */
 
 		j.addMouseListener(this);
 		j.addMouseMotionListener(this);
@@ -163,32 +144,6 @@ public class PathsImagePreview extends JPanel
 		j.removeMouseWheelListener(this);
 		j.removeWindowListener(this);
 	}
-
-	/*
-	 * public void saveImage() {
-	 * width = controller.getImageWidth();
-	 * height = controller.getImageHeight();
-	 * count = 1;
-	 * BufferedImage img = new BufferedImage(controller.getImageWidth(), controller.getImageHeight(),
-	 * BufferedImage.TYPE_INT_ARGB);
-	 * Graphics2D g2 = img.createGraphics();
-	 * setSize(controller.getImageWidth(), controller.getImageHeight());
-	 * printAll(g2);
-	 * g2.dispose();
-	 * try {
-	 * ;
-	 * Path s = Paths.get(View.DESKTOP_PATH.toString() + "\\" + controller.getFileName() + ".png");
-	 * 
-	 * Files.deleteIfExists(s);
-	 * Files.createFile(s);
-	 * 
-	 * ImageIO.write(img, "png", s.toFile());
-	 * } catch (Exception e) {
-	 * e.printStackTrace();
-	 * }
-	 * JOptionPane.showMessageDialog(null, "PNG image saved!", "Done", JOptionPane.INFORMATION_MESSAGE);
-	 * }
-	 */
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		int thisX = getLocation().x;
@@ -201,7 +156,6 @@ public class PathsImagePreview extends JPanel
 		int Y = thisY + yMoved / 10;
 
 		setLocation(X, Y);
-		// repaint();
 	}
 
 	@Override

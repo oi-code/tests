@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
@@ -25,6 +26,7 @@ import ImageConvertor.data.ImageLoader;
 import ImageConvertor.data.State;
 import ImageConvertor.data.Points;
 import ImageConvertor.views.desktop.ParsedImagePreview;
+import ImageConvertor.views.desktop.PathsImagePreview;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
@@ -42,6 +44,19 @@ public class Controller {
 	public Controller() {
 		getExecutorService();
 		messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
+		Thread helper = new Thread(() -> {
+			if (messageExchanger.size() > 50) {
+				messageExchanger.clear();
+			}
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		});
+		helper.setName("controller message exchanger observer");
+		helper.setDaemon(true);
+		helper.start();
 	}
 
 	public int getChunks() {
@@ -82,6 +97,9 @@ public class Controller {
 		float weightRate = settings.get(3).floatValue();
 		float pathLengthDivider = settings.get(4).floatValue();
 		int maxRange = settings.get(5).intValue();
+		float pathDivider = settings.get(6).floatValue();
+		int iterations = settings.get(7).intValue();
+		float vaporizeRate = settings.get(8).floatValue();
 		if (isCanceled) {
 			return;
 		}
@@ -91,9 +109,11 @@ public class Controller {
 			view.setDaemon(true);
 			view.start();
 			workerManager = new WorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
-					weightRate, pathLengthDivider, maxRange);
+					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate);
 			workerManager.getPath();
 			isProcessed = true;
+
+			new PathsImagePreview(this).showImage();
 		});
 		t.setName("Controller support thread");
 		t.setDaemon(true);
@@ -216,8 +236,7 @@ public class Controller {
 	}
 
 	public short getChunkSize() {
-		return // chunkSize;
-		STATE.getChunkSize();
+		return STATE.getChunkSize();
 	}
 
 	public float getStroke() {
@@ -302,8 +321,12 @@ public class Controller {
 		this.isCanceled = isCanceled;
 	}
 
+	public void setFinalList(List<List<Point>> finalList) {
+		STATE.setChosedLayers(finalList);
+	}
+
 	public List<List<Point>> getFinalList() {
-		return STATE.getFinalList();
+		return STATE.getChosedLayers();
 	}
 
 	public String pollMessage() {
@@ -312,6 +335,14 @@ public class Controller {
 
 	public void offerMessage(String string) {
 		messageExchanger.offer(string);
+	}
+
+	public List<List<Point>> getPathsPointList() {
+		return STATE.getPathsPointList();
+	}
+
+	public void setPathsPointList(List<List<Point>> finalList) {
+		STATE.setPathsPointList(finalList);
 	}
 
 }

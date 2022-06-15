@@ -290,9 +290,11 @@ public class View extends JFrame {
 		imageChooser.setFocusable(false);
 		imageChooser.addActionListener(e -> {
 
-			if (controller.isProcessed()) {
-				clearMemory();
-			}
+			/*
+			 * if (controller.isProcessed()) {
+			 * clearMemory();
+			 * }
+			 */
 
 			setTitle("ImageConvertor");
 			controller.loadImage();
@@ -357,7 +359,7 @@ public class View extends JFrame {
 		JButton constructPath = new JButton("Construct Path");
 		constructPath.setFocusable(false);
 		constructPath.addActionListener(e -> {
-			List<Float>settings=new AlgorithmSettingsView(controller).getSettings();
+			List<Float> settings = new AlgorithmSettingsView(controller).getSettings();
 			controller.createPath(settings);
 		});
 
