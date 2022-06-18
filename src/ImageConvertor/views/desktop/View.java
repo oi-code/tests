@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -46,9 +47,6 @@ public class View extends JFrame {
 		init();
 
 		setSize(600, 335);
-		// setResizable(false);
-		// setLayout(null);
-		setTitle("ImageConvertor v11");
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
@@ -57,24 +55,26 @@ public class View extends JFrame {
 		return INSTANCE;
 	}
 
-	private void clearMemory() {
-
-		controller.setNullParser();
-
-		rightContainer.removeAll();
-		leftContainer.removeAll();
-		mainContainer.removeAll();
-
-		remove(mainContainer);
-		// removeAll();
-		mainContainer = null;
-		leftContainer = null;
-		rightContainer = null;
-		// controller = null;
-		reloadController();
-		Runtime.getRuntime().gc();
-		init();
-	}
+	/*
+	 * private void clearMemory() {
+	 * 
+	 * controller.setNullParser();
+	 * 
+	 * rightContainer.removeAll();
+	 * leftContainer.removeAll();
+	 * mainContainer.removeAll();
+	 * 
+	 * remove(mainContainer);
+	 * // removeAll();
+	 * mainContainer = null;
+	 * leftContainer = null;
+	 * rightContainer = null;
+	 * // controller = null;
+	 * reloadController();
+	 * Runtime.getRuntime().gc();
+	 * init();
+	 * }
+	 */
 
 	private void reloadController() {
 
@@ -95,7 +95,7 @@ public class View extends JFrame {
 	}
 
 	private void init() {
-
+		setTitle(controller.getLocaleText("program_name"));
 		mainContainer = new JPanel();
 		mainContainer.setLayout(new GridLayout(1, 2));
 
@@ -155,8 +155,8 @@ public class View extends JFrame {
 		chunkSize.setLayout(new GridLayout(1, 2));
 
 		JTextField jChunkSize = new JTextField();
-		jChunkSize.setText("Chunk size:");
-		jChunkSize.setToolTipText("Maximum: 25");
+		jChunkSize.setText(controller.getLocaleText("chunk_size"));
+		jChunkSize.setToolTipText(controller.getLocaleText("max") + ": 25");
 		jChunkSize.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		jChunkSize.setFocusable(false);
 		jChunkSize.setBorder(null);
@@ -182,8 +182,8 @@ public class View extends JFrame {
 	private JComponent getStrokeFactorContainer() {
 		JPanel strokeFactor = new JPanel();
 		strokeFactor.setLayout(new GridLayout(1, 2));
-		JTextField jStrokeFactor = new JTextField("Stroke factor:");
-		jStrokeFactor.setToolTipText("Maximum: 5");
+		JTextField jStrokeFactor = new JTextField(controller.getLocaleText("stroke_factor") + ":");
+		jStrokeFactor.setToolTipText(controller.getLocaleText("max")+": 5");
 		jStrokeFactor.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		jStrokeFactor.setFocusable(false);
 		jStrokeFactor.setBorder(null);
@@ -208,15 +208,15 @@ public class View extends JFrame {
 		JPanel layers = new JPanel();
 		layers.setLayout(new GridLayout(1, 2));
 
-		JTextField layersText = new JTextField("Layers:");
-		layersText.setToolTipText("Layers count");
+		JTextField layersText = new JTextField(controller.getLocaleText("layers")+ ":");
+		layersText.setToolTipText(controller.getLocaleText("layers_count"));
 		layersText.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		layersText.setFocusable(false);
 		layersText.setEditable(false);
 		layersText.setBorder(null);
 
 		JSpinner layerSpinner = new JSpinner(new SpinnerNumberModel(controller.getLayers(), 1, 30, 1));
-		layerSpinner.setToolTipText("Minimal luminal pixel");
+		layerSpinner.setToolTipText(controller.getLocaleText("min_lum"));
 		layerSpinner.setBorder(null);
 		JComponent layerSpinnerEditor = layerSpinner.getEditor();
 		JSpinner.DefaultEditor lumSpinnerEditor = (JSpinner.DefaultEditor) layerSpinnerEditor;
@@ -236,13 +236,13 @@ public class View extends JFrame {
 
 	private JComponent getFigureChoserContainer() {
 		JPanel chooseFigure = new JPanel(new GridLayout(1, 2));
-		JTextField textFigure = new JTextField("Figure: ");
-		textFigure.setToolTipText("The figure will be use for draw image");
+		JTextField textFigure = new JTextField(controller.getLocaleText("figure")+":");
+		textFigure.setToolTipText(controller.getLocaleText("figure_tip"));
 		textFigure.setEditable(false);
 		textFigure.setFocusable(false);
 		textFigure.setBorder(null);
 		textFigure.setHorizontalAlignment((int) CENTER_ALIGNMENT);
-		String[] arr = { "Line", "Circle", "X" };
+		String[] arr = { controller.getLocaleText("line"), controller.getLocaleText("circle"), controller.getLocaleText("x") };
 		JSpinner figSpinner = new JSpinner(new SpinnerListModel(arr));
 		figSpinner.setBorder(null);
 		JComponent figEditor = figSpinner.getEditor();
@@ -262,17 +262,17 @@ public class View extends JFrame {
 
 	private JComponent getRndChoserContainer() {
 		JPanel rndChooser = new JPanel(new GridLayout(1, 2));
-		JTextField rndChooserText = new JTextField("Random for draw:");
-		rndChooserText.setToolTipText("Random for pixels");
+		JTextField rndChooserText = new JTextField(controller.getLocaleText("rnd_for_dr"));
+		rndChooserText.setToolTipText(controller.getLocaleText("rnd_for_dr"));
 		rndChooserText.setEditable(false);
 		rndChooserText.setFocusable(false);
 		rndChooserText.setBorder(null);
 		rndChooserText.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		JPanel rndChooserPan = new JPanel();
-		JCheckBox randChoose = new JCheckBox("Use");
+		JCheckBox randChoose = new JCheckBox(controller.getLocaleText("use"));
 		randChoose.setFocusable(false);
 		randChoose.setSelected(true);
-		randChoose.setToolTipText("Use random for draw image.");
+		randChoose.setToolTipText(controller.getLocaleText("rnd_tip"));
 		controller.setRandom(randChoose.isSelected());
 		randChoose.addChangeListener(e -> {
 			controller.setRandom(randChoose.isSelected());
@@ -286,7 +286,7 @@ public class View extends JFrame {
 
 	private JComponent getImageLoaderButton() {
 
-		JButton imageChooser = new JButton("Choose Image");
+		JButton imageChooser = new JButton(controller.getLocaleText("chose_image"));
 		imageChooser.setFocusable(false);
 		imageChooser.addActionListener(e -> {
 
@@ -296,7 +296,7 @@ public class View extends JFrame {
 			 * }
 			 */
 
-			setTitle("ImageConvertor");
+			setTitle(controller.getLocaleText("program_name"));
 			controller.loadImage();
 
 			if (controller.isLoaded()) {
@@ -318,7 +318,7 @@ public class View extends JFrame {
 	}
 
 	private JComponent getProccessButton() {
-		JButton processImage = new JButton("Process Image");
+		JButton processImage = new JButton(controller.getLocaleText("prc_img"));
 
 		processImage.setFocusable(false);
 		processImage.addActionListener(e -> {
@@ -338,25 +338,25 @@ public class View extends JFrame {
 			controller.showImage();
 
 			workTime = (System.currentTimeMillis() - time) / 1000d;
-			setTitle("Previrw image. Work done in " + workTime + " seconds.");
+			setTitle(String.format(controller.getLocaleText("img_prev_time"), workTime));
 
 		});
 		return processImage;
 	}
 
 	private JComponent getSaveButton() {
-		JButton saveImage = new JButton("Save Image");
+		JButton saveImage = new JButton(controller.getLocaleText("save_img"));
 		saveImage.setFocusable(false);
 		saveImage.addActionListener(e -> {
 			controller.saveImage();
-			setTitle("Saved. Work done in " + workTime + " seconds.");
+			setTitle(String.format(controller.getLocaleText("saved_word_done"), workTime));
 		});
 
 		return saveImage;
 	}
 
 	private JComponent getConstructPathButton() {
-		JButton constructPath = new JButton("Construct Path");
+		JButton constructPath = new JButton(controller.getLocaleText("construct_path"));
 		constructPath.setFocusable(false);
 		constructPath.addActionListener(e -> {
 			List<Float> settings = new AlgorithmSettingsView(controller).getSettings();
@@ -367,7 +367,7 @@ public class View extends JFrame {
 	}
 
 	private JComponent getCreateSvgButton() {
-		JButton testButton = new JButton("Create SVG");
+		JButton testButton = new JButton(controller.getLocaleText("create_svg"));
 		testButton.setFocusable(false);
 		testButton.addActionListener(e -> {
 			controller.createSVG();
@@ -376,7 +376,7 @@ public class View extends JFrame {
 	}
 
 	private JComponent createGCodeButton() {
-		JButton gcode = new JButton("GCODE");
+		JButton gcode = new JButton(controller.getLocaleText("GCODE"));
 		gcode.setFocusable(false);
 		gcode.addActionListener(e -> {
 			controller.createGCode();

@@ -20,10 +20,9 @@ import java.util.stream.IntStream;
 import ImageConvertor.data.Direction;
 import ImageConvertor.data.Edge;
 import ImageConvertor.data.Points;
-import ImageConvertor.views.desktop.PathsImagePreview;
 import ImageConvertor.views.desktop.View;
 
-public class WorkerManager {
+public class PathWorkerManager {
 	Controller controller;
 	int chunkSize, imageWidth, imageHeight;
 	List<List<Points>> pointsList;
@@ -46,7 +45,7 @@ public class WorkerManager {
 	private float initalPathDivider;
 	private float vaporizeDelimiter;
 
-	public WorkerManager(Controller controller, int totalConnectedPointsLimit, int limitConnectedPoints,
+	public PathWorkerManager(Controller controller, int totalConnectedPointsLimit, int limitConnectedPoints,
 			float rangeRate, float weightRate, float pathLengthDivider, int maxRange, float initalPathDivider,
 			int iterationsCount, float vaporizeDelimiter) {
 		this(controller);
@@ -62,7 +61,7 @@ public class WorkerManager {
 		this.vaporizeDelimiter=vaporizeDelimiter;
 	}
 
-	private WorkerManager(Controller c) {
+	private PathWorkerManager(Controller c) {
 		controller = c;
 		chunkSize = c.getChunkSize();
 		imageWidth = c.getImageWidth();
@@ -99,35 +98,35 @@ public class WorkerManager {
 		Set<Points> cnt = new HashSet<>();
 		while (recursionInit(cnt)) {
 
-			System.out.println("init path creator...");
+			//System.out.println("init path creator...");
 			controller.offerMessage("init path creator...");
-			System.out.println("start create matrix");
+			//System.out.println("start create matrix");
 			controller.offerMessage("start create matrix");
 
 			Edge[][] ajMatrix = createAdjacencyMatrix();
 
-			System.out.println("matrix created, start compute");
+			//System.out.println("matrix created, start compute");
 			controller.offerMessage("matrix created, start compute");
 
 			List<Points> currentIterationBestPath = null;
 			AtomicInteger counter = new AtomicInteger(0);
-			List<Worker> workers = new ArrayList<>();
+			List<PathWorker> workers = new ArrayList<>();
 			float lgth = Float.MAX_VALUE;
 			Map<Float, List<Edge>> paths = new ConcurrentHashMap<>();
 			int iterations = 0;
 			IntStream.rangeClosed(0, Controller.N_THREADS - 1).forEach(i -> {
-				Worker w = new Worker(ajMatrix, tmp, controller, rangeRate, weightRate,
+				PathWorker w = new PathWorker(ajMatrix, tmp, controller, rangeRate, weightRate,
 						ThreadLocalRandom.current().nextInt(tmp.size()), i, counter, paths);
 				w.start();
 				workers.add(w);
 				counter.incrementAndGet();
 			});
 			while (iterations < iterationsCount && !isCanceled) {
-				System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
+				//System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
 				controller.offerMessage(String.format("next iteration started %d, length: %f", iterations, lgth));
 				while (counter.get() > 0 && !isCanceled) {
 					try {
-						for (Worker w : workers) {
+						for (PathWorker w : workers) {
 							if (w.getState() == State.WAITING && !w.isWorkDone && !isCanceled) {
 								synchronized (w.myMutex) {
 									// System.out.println("notified");
@@ -156,7 +155,7 @@ public class WorkerManager {
 				paths.clear();
 				counter.set(workers.size());
 				iterations++;
-				for (Worker w : workers) {
+				for (PathWorker w : workers) {
 					w.isWorkDone = false;
 				}
 			}
@@ -169,7 +168,7 @@ public class WorkerManager {
 					}
 				}
 			}
-			System.out.println("all threads died.");
+			//System.out.println("all threads died.");
 			controller.offerMessage("all threads died.");
 			if (isCanceled) {
 				return;
@@ -237,7 +236,7 @@ public class WorkerManager {
 		if (isCanceled) {
 			return;
 		}
-		System.out.println("compute end. start draw");
+		//System.out.println("compute end. start draw");
 		controller.offerMessage("compute end. start draw");
 		controller.setPathsPointList(finalList);
 		// System.out.println(finalList.size());
@@ -309,7 +308,7 @@ public class WorkerManager {
 		if (isCanceled) {
 			return false;
 		}
-		System.out.println("rec init");
+		//System.out.println("rec init");
 		controller.offerMessage("rec init");
 		reloadPointsContainer();
 		int count = 0;
@@ -321,14 +320,14 @@ public class WorkerManager {
 				}
 			}
 		}
-		System.out.println("freePoints: " + count);
+		//System.out.println("freePoints: " + count);
 		controller.offerMessage("freePoints: " + count);
 
 		short[] entry = getEntryPoint();
 		int w = entry[1];
 		int h = entry[0];
 		if (h == -1 || w == -1) {
-			System.out.println("CANT FIND ENTRY");
+			//System.out.println("CANT FIND ENTRY");
 			controller.offerMessage("CANT FIND ENTRY");
 			return false;
 		}
@@ -338,7 +337,7 @@ public class WorkerManager {
 		recursion(cur, result);
 
 		tmp = result.stream().collect(Collectors.toList());
-		System.out.println("counted points: " + result.size());
+		//System.out.println("counted points: " + result.size());
 		controller.offerMessage("counted points: " + result.size());
 		if (result.size() < limitConnectedPoints) {
 			return recursionInit(result);
@@ -350,7 +349,7 @@ public class WorkerManager {
 		 * }
 		 * copyPoints = copy;
 		 */
-		System.out.println("rec finished");
+		//System.out.println("rec finished");
 		controller.offerMessage("rec finished");
 		result.clear();
 		return true;
@@ -428,12 +427,12 @@ public class WorkerManager {
 				if (check(height, width)) {
 					ans[0] = height;
 					ans[1] = width;
-					System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
+					//System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
 					return ans;
 				}
 			}
 		}
-		System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
+		//System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
 		return ans;
 	}
 

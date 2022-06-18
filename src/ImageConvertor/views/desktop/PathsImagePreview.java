@@ -60,20 +60,20 @@ public class PathsImagePreview extends JPanel
 		height = controller.getImageHeight();
 		j = new JFrame();
 		j.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		j.setTitle("Preview image");
+		j.setTitle(controller.getLocaleText("path_prev"));
 		j.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
 		j.setLocationRelativeTo(null);
 
 		boxes = new ArrayList<JCheckBox>();
 
-		layers = new JFrame("Path chooser");
+		layers = new JFrame(controller.getLocaleText("path_csr"));
 		layers.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		layers.setLocation(j.getLocation().x - 210, j.getLocation().y);
 		layers.setLayout(new GridLayout(10, 3));
 		layers.setSize(225, 300);
 		for (int i = 0; i < forDrawContainer.size(); i++) {
-			JCheckBox temp = new JCheckBox("Path " + (i + 1));
+			JCheckBox temp = new JCheckBox(controller.getLocaleText("path")+": " + (i + 1));
 			temp.setFocusable(false);
 			boxes.add(temp);
 			layers.add(temp);

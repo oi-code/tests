@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.ImageIcon;
 
@@ -22,6 +23,7 @@ public class State {
 	private List<List<Points>> forDrawContainer = new ArrayList<>();
 	private List<List<Point>> chosedLayers = new ArrayList<>();
 	private List<List<Point>> pathPointsList;
+	private Properties locale;
 	private boolean isLoaded;
 	private boolean useRandom;
 	private int layers;
@@ -170,6 +172,14 @@ public class State {
 
 	public void setPathsPointList(List<List<Point>> finalList) {
 		pathPointsList = finalList;
+	}
+
+	public Properties getLocale() {
+		return locale;
+	}
+
+	public void setLocale(Properties locale) {
+		this.locale = locale;
 	}
 
 }

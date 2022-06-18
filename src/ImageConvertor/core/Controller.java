@@ -2,6 +2,12 @@ package ImageConvertor.core;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,6 +15,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -33,16 +40,17 @@ public class Controller {
 
 	private boolean isProcessed;
 	private boolean isCanceled;
-	private WorkerManager workerManager;
-	private ExecutorService execService; // = // Executors.newCachedThreadPool();
-	// Executors.newFixedThreadPool(View.N_THREADS);
-	private ArrayBlockingQueue<String> messageExchanger;
+	private PathWorkerManager workerManager;
 	private CompletionService<List<Points>> service;
+	private ExecutorService exec; // = // Executors.newCachedThreadPool();
+	// Executors.newFixedThreadPool(View.N_THREADS);
+	public ArrayBlockingQueue<String> messageExchanger;
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
 	public Controller() {
 		getExecutorService();
+		getLocale();
 		messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
 		Thread helper = new Thread(() -> {
 			if (messageExchanger.size() > 50) {
@@ -57,6 +65,25 @@ public class Controller {
 		helper.setName("controller message exchanger observer");
 		helper.setDaemon(true);
 		helper.start();
+	}
+
+	private void getLocale() {
+		Properties prop = new Properties();
+		String defLoc = "ru_RU";// Locale.getDefault().toString();
+		try {
+			InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
+			InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
+			prop.load(isr);
+			STATE.setLocale(prop);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public String getLocaleText(String key) {
+		return STATE.getLocale().getProperty(key);
 	}
 
 	public int getChunks() {
@@ -81,43 +108,6 @@ public class Controller {
 
 	public List<List<Points>> getForDrawContainer() {
 		return STATE.getForDrawContainer();
-	}
-
-	public void createPath(List<Float> settings) {
-		isProcessed = false;
-		isCanceled = false;
-		if (settings.size() < 5) {
-			isCanceled = true;
-			isProcessed = true;
-			return;
-		}
-		int totalConnectedPointsLimit = settings.get(0).intValue();
-		int limitConnectedPoints = settings.get(1).intValue();
-		float rangeRate = settings.get(2).floatValue();
-		float weightRate = settings.get(3).floatValue();
-		float pathLengthDivider = settings.get(4).floatValue();
-		int maxRange = settings.get(5).intValue();
-		float pathDivider = settings.get(6).floatValue();
-		int iterations = settings.get(7).intValue();
-		float vaporizeRate = settings.get(8).floatValue();
-		if (isCanceled) {
-			return;
-		}
-		Thread t = new Thread(() -> {
-			messageExchanger.clear();
-			Thread view = new Thread(new ViewProccessStatus(this));
-			view.setDaemon(true);
-			view.start();
-			workerManager = new WorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
-					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate);
-			workerManager.getPath();
-			isProcessed = true;
-
-			new PathsImagePreview(this).showImage();
-		});
-		t.setName("Controller support thread");
-		t.setDaemon(true);
-		t.start();
 	}
 
 	public void createSVG() {
@@ -181,58 +171,86 @@ public class Controller {
 	}
 
 	private void getPointsList() {
-		messageExchanger.clear();
-		Runtime.getRuntime().gc();
-		float lumStep = 1f / STATE.getLayers();
-		float start = 0f;
-		List<Float> steps = new ArrayList<>();
-		steps.add(start);
-		while (start < 1f) {
-			start = start + lumStep;
-			steps.add(start);
-		}
-		List<List<Points>> results = new ArrayList<List<Points>>();
-		service = new ExecutorCompletionService<>(execService);
+		/*
+		 * Thread worker = new Thread(() -> {
+		 * ImageParser parser = new ImageParser(this);
+		 * STATE.setAllLayersContainer(parser.doTask());
+		 * });
+		 * worker.setDaemon(true);
+		 * worker.start();
+		 */
+	}
 
-		for (int i = 0; i < steps.size() - 1; i++) {
-			SingleThreadParseImage temParseImage = new SingleThreadParseImage(this);
-			temParseImage.setMinLum(steps.get(i));
-			temParseImage.setMaxLum(steps.get(i + 1));
-			service.submit(new Callable<List<Points>>() {
-				@Override
-				public List<Points> call() throws Exception {
-					List<Points> result = temParseImage.getPointsList();
-					return result;
-				}
-			});
+	public void createPath(List<Float> settings) {
+		isProcessed = false;
+		isCanceled = false;
+		if (settings == null || settings.size() < 5) {
+			isCanceled = true;
+			isProcessed = true;
+			return;
 		}
-		int currentTask = 0;
-		for (int i = 0; i < steps.size() - 1; i++) {
-			try {
-				Future<List<Points>> temp = service.take();
-				if (temp.isDone()) {
-					List<Points> res = temp.get();
-					results.add(res);
-					messageExchanger.offer(String.format("current layer %d", currentTask++));
-				} else {
-					continue;
-				}
-			} catch (InterruptedException | ExecutionException e) {
-				JOptionPane.showMessageDialog(null,
-						"Fatal Error:\n" + e.getCause().getMessage() + ".\nPress \"OK\" to exit.", "Exception occured",
-						JOptionPane.ERROR_MESSAGE);
-			}
+		int totalConnectedPointsLimit = settings.get(0).intValue();
+		int limitConnectedPoints = settings.get(1).intValue();
+		float rangeRate = settings.get(2).floatValue();
+		float weightRate = settings.get(3).floatValue();
+		float pathLengthDivider = settings.get(4).floatValue();
+		int maxRange = settings.get(5).intValue();
+		float pathDivider = settings.get(6).floatValue();
+		int iterations = settings.get(7).intValue();
+		float vaporizeRate = settings.get(8).floatValue();
+		if (isCanceled) {
+			return;
 		}
-		for (Iterator<List<Points>> iterator = results.iterator(); iterator.hasNext();) {
-			List<Points> list = iterator.next();
-			if (list.size() < 1) {
-				iterator.remove();
-			}
-		}
-		Collections.sort(results, (o1, o2) -> {
-			return Float.compare(o2.get(0).layer, o1.get(0).layer);
-		});
-		STATE.setAllLayersContainer(results);
+		Runnable t = () -> {
+			messageExchanger.clear();
+			/*
+			 * Thread view = new Thread(new ViewProccessStatus(this));
+			 * view.setDaemon(true);
+			 * view.start();
+			 */
+			exec.submit(new ViewProccessStatus(this));
+			workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
+					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate);
+			workerManager.getPath();
+			isProcessed = true;
+			// view.interrupt();
+			new PathsImagePreview(this).showImage();
+		};
+		exec.submit(t);
+		/*
+		 * t.setName("Controller support thread pathCreate");
+		 * t.setDaemon(true);
+		 * t.start();
+		 */
+	}
+
+	public void showImage() {
+		isProcessed = false;
+		Runnable worker = () -> {
+			messageExchanger.clear();
+			/*
+			 * Thread view = new Thread(new ViewProccessStatus(this));
+			 * view.setDaemon(true);
+			 * view.start();
+			 */
+			exec.submit(new ViewProccessStatus(this));
+			// getPointsList();
+			ImageParserWorker parser = new ImageParserWorker(this);
+			STATE.setAllLayersContainer(parser.doTask());
+			/*
+			 * STATE.setParsedImage(new ParsedImagePreview(this));
+			 * STATE.getParsedImage().showImage();
+			 */
+			isProcessed = true;
+			// view.interrupt();
+			new ParsedImagePreview(this).showImage();
+		};
+		/*
+		 * worker.setName("Controller support thread parseImage");
+		 * worker.setDaemon(true);
+		 * worker.start();
+		 */
+		exec.submit(worker);
 	}
 
 	public short getChunkSize() {
@@ -253,22 +271,6 @@ public class Controller {
 
 	public BufferedImage getBufferedImage() {
 		return STATE.getBufferedImage();
-	}
-
-	public void showImage() {
-		isProcessed = false;
-		Thread worker = new Thread(() -> {
-			messageExchanger.clear();
-			Thread processView = new Thread(new ViewProccessStatus(this));
-			processView.setDaemon(true);
-			processView.start();
-			getPointsList();
-			STATE.setParsedImage(new ParsedImagePreview(this));
-			STATE.getParsedImage().showImage();
-			isProcessed = true;
-		});
-		worker.setDaemon(true);
-		worker.start();
 	}
 
 	public void saveImage() {
@@ -293,8 +295,8 @@ public class Controller {
 	}
 
 	public void cancelTask() {
-		if (!execService.isShutdown()) {
-			execService.shutdownNow();
+		if (!exec.isShutdown()) {
+			exec.shutdownNow();
 			getExecutorService();
 		}
 		if (workerManager != null) {
@@ -306,7 +308,14 @@ public class Controller {
 	}
 
 	private void getExecutorService() {
-		execService = Executors.newFixedThreadPool(N_THREADS);
+		exec = Executors.newFixedThreadPool(N_THREADS*2);
+	}
+
+	public CompletionService<List<Points>> getService() {
+		if (service == null) {
+			service = new ExecutorCompletionService<>(exec);
+		}
+		return service;
 	}
 
 	public void createGCode() {

@@ -11,7 +11,7 @@ import ImageConvertor.data.Edge;
 import ImageConvertor.data.Points;
 import ImageConvertor.data.ValuesContainer;
 
-public class Worker extends Thread implements Callable<Object[]> {
+public class PathWorker extends Thread implements Callable<Object[]> {
 
 	Edge[][] matrix;
 	List<Points> pointsContainer;
@@ -27,7 +27,7 @@ public class Worker extends Thread implements Callable<Object[]> {
 	final int threadIndex;
 	public boolean isWorkDone = false;
 
-	public Worker(Edge[][] matrix, List<Points> pointsContainer, Controller c, float rangeRate, float weightRate,
+	public PathWorker(Edge[][] matrix, List<Points> pointsContainer, Controller c, float rangeRate, float weightRate,
 			int startHeight, int threadIndex, AtomicInteger counter, Map<Float, List<Edge>> paths) {
 		this.matrix = matrix;
 		this.c = c;

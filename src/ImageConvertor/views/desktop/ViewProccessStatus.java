@@ -45,11 +45,11 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	float size = 0f;
 
 	public ViewProccessStatus(Controller controller) {
-		//super(View.getInstance(), ModalityType.TOOLKIT_MODAL);
 		this.controller = controller;
 		setLayout(new BorderLayout());
-		setTitle("Processing...");
-		Thread.currentThread().setName("process window");
+		setTitle(controller.getLocaleText("processing"));
+		//setModal(true);
+		Thread.currentThread().setName("process_window_thread_helper");
 		// text = (JTextComponent) getTextLabel();
 		add(getButtonAndLoadingImageLabel(), BorderLayout.PAGE_END);
 		add(getTextLabel());
@@ -57,7 +57,6 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 		setLocationRelativeTo(null);
 		setFocusable(false);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		// setAlwaysOnTop(true);
 	}
 
 	@Override
@@ -73,6 +72,8 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 				// System.out.println(nextText);
 			} catch (Exception e) {
 				e.printStackTrace();
+				this.dispose();
+				return;
 			}
 			text.setText(text.getText() + "\n" + nextText);
 			text.setCaretPosition(text.getText().length());
@@ -120,7 +121,7 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 		 */
 		JButton button = new JButton();
 		size = button.getFont().getSize();
-		button.setText("Cancel task");
+		button.setText(controller.getLocaleText("cancel_task"));
 		button.setFocusable(false);
 		button.setSelected(false);
 		button.setEnabled(true);

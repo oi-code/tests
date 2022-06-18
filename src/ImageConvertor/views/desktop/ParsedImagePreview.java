@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.imageio.ImageIO;
@@ -65,29 +67,20 @@ public class ParsedImagePreview extends JPanel
 		height = controller.getImageHeight();
 		j = new JFrame();
 		j.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		j.setTitle("Preview image");
-		/*
-		 * if (width > height) {
-		 * j.setSize(720, 480);
-		 * } else {
-		 * j.setSize(480, 720);
-		 * }
-		 */
+		j.setTitle(controller.getLocaleText("img_prev"));
 		j.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
 		j.setLocationRelativeTo(null);
 
 		boxes = new ArrayList<JCheckBox>();
 
-		layers = new JFrame("Layer chooser");
+		layers = new JFrame(controller.getLocaleText("layer_csr"));
 		layers.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		layers.setLocation(j.getLocation().x - 210, j.getLocation().y);
-		// layers.setLocationRelativeTo(null);
-		// layers.setLayout(new GridLayout(forDraw.size(), 1));
 		layers.setLayout(new GridLayout(10, 3));
 		layers.setSize(225, 300);// (forDraw.size()+1)*40);
 		for (int i = 0; i < allLayersContainer.size(); i++) {
-			JCheckBox temp = new JCheckBox("Layer " + (i + 1));
+			JCheckBox temp = new JCheckBox(controller.getLocaleText("layer") + ": " + (i + 1));
 			temp.setFocusable(false);
 			boxes.add(temp);
 			layers.add(temp);
@@ -133,24 +126,15 @@ public class ParsedImagePreview extends JPanel
 				int x2 = innerCurrentPoints.endPoint.x / count;
 				int y2 = innerCurrentPoints.endPoint.y / count;
 
-				switch (figure) {
-				case "Circle": {
+				if (controller.getLocaleText("circle").equals(figure)) {
 					int rnd = (int) innerCurrentPoints.getLength() + ThreadLocalRandom.current().nextInt(s);
 					g2.drawArc(x1, y1, rnd, rnd, 0, 360);
-					break;
-				}
-				case "Line": {
+				} else if (controller.getLocaleText("line").equals(figure)) {
 					g2.drawLine(x1, y1, x2, y2);
-
-					break;
-				}
-				case "X": {
+				} else if (controller.getLocaleText("x").equals(figure)) {
 					g2.drawLine(x1, y1, x2, y2);
 					g2.drawLine(x1, y2, x2, y1);
-					break;
-				}
-				default:
-					break;
+				} else {
 				}
 			}
 
@@ -158,9 +142,9 @@ public class ParsedImagePreview extends JPanel
 	}
 
 	public void showImage() {
+
 		/*
-		 * BufferedImage img = new BufferedImage(controller.getImageWidth(),
-		 * controller.getImageHeight(),
+		 * BufferedImage img = new BufferedImage(controller.getImageWidth(), controller.getImageHeight(),
 		 * BufferedImage.TYPE_INT_ARGB);
 		 * Graphics2D g2 = img.createGraphics();
 		 * setSize(controller.getImageWidth(), controller.getImageHeight());
@@ -208,7 +192,8 @@ public class ParsedImagePreview extends JPanel
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		JOptionPane.showMessageDialog(null, "PNG image saved!", "Done", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, controller.getLocaleText("image_saved"),
+				controller.getLocaleText("saved_word_done"), JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	@Override
