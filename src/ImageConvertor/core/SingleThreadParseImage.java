@@ -46,6 +46,9 @@ class SingleThreadParseImage {
 			points.startPoint.x = w;
 			points.startPoint.y = h;
 			while (isBlackPixel(w, h)) {
+				if (c.isCanceled()) {
+					return null;
+				}
 				// w = arr[0];
 				// h = arr[1];
 				w = (short) (w + direction.getWidth());
@@ -77,6 +80,9 @@ class SingleThreadParseImage {
 
 				for (short h1 = h; h1 < (h + chunkSize); h1++) {
 					for (short w1 = w; w1 < (w + chunkSize); w1++) {
+
+						if (c.isCanceled())
+							return null;
 						Points p1 = new Points(cHeight, cWidth);
 						Points p2 = new Points(cHeight, cWidth);
 						Points p3 = new Points(cHeight, cWidth);

@@ -39,7 +39,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 		this.counter = counter;
 		this.paths = paths;
 		this.setDaemon(true);
-		this.setName("manual-thread-worker-" + threadIndex);
+		this.setName("manual-thread-worker-"+ threadIndex);
 	}
 
 	@Override

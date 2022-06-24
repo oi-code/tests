@@ -2,21 +2,11 @@ package ImageConvertor.views.desktop;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.ComponentOrientation;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.GraphicsConfiguration;
 import java.awt.GridLayout;
-import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.swing.ImageIcon;
@@ -28,27 +18,29 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.JTextComponent;
 
 import ImageConvertor.core.Controller;
 
+@SuppressWarnings("serial")
 public class ViewProccessStatus extends JDialog implements Runnable {
 
 	Controller controller;
 	JTextComponent text;
 	JScrollPane scrollPane;
 	float size = 0f;
+	private Queue<String> messageExchanger;
 
-	public ViewProccessStatus(Controller controller) {
+	public ViewProccessStatus(Controller controller, Queue<String> messageExchanger) {
+		//super(View.getInstance(), true);
 		this.controller = controller;
+		this.messageExchanger = messageExchanger;
 		setLayout(new BorderLayout());
 		setTitle(controller.getLocaleText("processing"));
-		//setModal(true);
+		// setModal(true);
+		// setModalityType(ModalityType.DOCUMENT_MODAL);
+		setAlwaysOnTop(true);
 		Thread.currentThread().setName("process_window_thread_helper");
 		// text = (JTextComponent) getTextLabel();
 		add(getButtonAndLoadingImageLabel(), BorderLayout.PAGE_END);
@@ -62,23 +54,24 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	@Override
 	public void run() {
 		setVisible(true);
-		while (!Thread.currentThread().isInterrupted() && !controller.isProcessed()) {
-			String nextText = "";
-			try {
-				nextText = controller.pollMessage();
-				if (nextText == null || "null".equals(nextText)) {
+		controller.setProcessWindowShowed(true);
+		try {
+			while (!Thread.currentThread().isInterrupted() && !controller.isProcessed() && !controller.isCanceled()) {
+				String nextText = "";
+				nextText = messageExchanger.poll();
+				if (nextText == null) {
 					continue;
 				}
-				// System.out.println(nextText);
-			} catch (Exception e) {
-				e.printStackTrace();
-				this.dispose();
-				return;
+				text.setText(text.getText() + "\n" + nextText);
+				if (text.getText().length() > 5000) {
+					text.setText(text.getText().substring(text.getText().length() - 1000, text.getText().length()));
+				}
+				text.setCaretPosition(text.getText().length());
 			}
-			text.setText(text.getText() + "\n" + nextText);
-			text.setCaretPosition(text.getText().length());
+		} finally {
+			controller.setProcessWindowShowed(false);
+			dispose();
 		}
-		this.dispose();
 		return;
 	}
 

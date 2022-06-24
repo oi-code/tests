@@ -5,8 +5,10 @@ import java.awt.GridLayout;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -32,6 +34,7 @@ public class View extends JFrame {
 	JPanel mainContainer;
 	JPanel rightContainer;
 	JPanel leftContainer;
+	Map<String, JButton> buttonContainer = new HashMap<>();
 
 	private static final View INSTANCE = new View();
 
@@ -39,14 +42,16 @@ public class View extends JFrame {
 		super();
 		stubImage = new StubImage();
 		controller = new Controller();
-		controller.setChunkSize((short) 3);
-		controller.setFigure("line");
-		controller.setLayers(10);
-		controller.setStroke(1f);
-		controller.setRandom(true);
+		/*
+		 * controller.setChunkSize((short) 3);
+		 * controller.setFigure("line");
+		 * controller.setLayers(10);
+		 * controller.setStroke(1f);
+		 * controller.setRandom(true);
+		 */
 		init();
-
 		setSize(600, 335);
+		setResizable(false);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
@@ -76,23 +81,25 @@ public class View extends JFrame {
 	 * }
 	 */
 
-	private void reloadController() {
-
-		short chunk = controller.getChunkSize();
-		float strokefactor = controller.getStroke();
-		int layers = controller.getLayers();
-		String figure = controller.getFigure();
-		boolean rnd = controller.isRandom();
-
-		controller = new Controller();
-
-		controller.setChunkSize(chunk);
-		controller.setStroke(strokefactor);
-		controller.setLayers(layers);
-		controller.setFigure(figure);
-		controller.setRandom(rnd);
-
-	}
+	/*
+	 * private void reloadController() {
+	 * 
+	 * short chunk = controller.getChunkSize();
+	 * float strokefactor = controller.getStroke();
+	 * int layers = controller.getLayers();
+	 * String figure = controller.getFigure();
+	 * boolean rnd = controller.isRandom();
+	 * 
+	 * controller = new Controller();
+	 * 
+	 * controller.setChunkSize(chunk);
+	 * controller.setStroke(strokefactor);
+	 * controller.setLayers(layers);
+	 * controller.setFigure(figure);
+	 * controller.setRandom(rnd);
+	 * 
+	 * }
+	 */
 
 	private void init() {
 		setTitle(controller.getLocaleText("program_name"));
@@ -107,6 +114,7 @@ public class View extends JFrame {
 
 		add(mainContainer);
 
+		startViewSupportThread();
 		setVisible(true);
 
 	}
@@ -162,7 +170,7 @@ public class View extends JFrame {
 		jChunkSize.setBorder(null);
 		jChunkSize.setEditable(false);
 
-		JSpinner chunkSpinner = new JSpinner(new SpinnerNumberModel(8/* controller.getChunkSize() */, 1, 25, 1));
+		JSpinner chunkSpinner = new JSpinner(new SpinnerNumberModel(8, 1, 25, 1));
 		JComponent figEditorCh = chunkSpinner.getEditor();
 		JSpinner.DefaultEditor chunkSpinnerEditor = (JSpinner.DefaultEditor) figEditorCh;
 		chunkSpinner.setBorder(null);
@@ -183,12 +191,12 @@ public class View extends JFrame {
 		JPanel strokeFactor = new JPanel();
 		strokeFactor.setLayout(new GridLayout(1, 2));
 		JTextField jStrokeFactor = new JTextField(controller.getLocaleText("stroke_factor") + ":");
-		jStrokeFactor.setToolTipText(controller.getLocaleText("max")+": 5");
+		jStrokeFactor.setToolTipText(controller.getLocaleText("max") + ": 5");
 		jStrokeFactor.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		jStrokeFactor.setFocusable(false);
 		jStrokeFactor.setBorder(null);
 		jStrokeFactor.setEditable(false);
-		JSpinner jStrokeFactorSpinner = new JSpinner(new SpinnerNumberModel(controller.getStroke(), 0.0f, 5f, 0.5f));
+		JSpinner jStrokeFactorSpinner = new JSpinner(new SpinnerNumberModel(1, 0.0f, 5f, 0.5f));
 		jStrokeFactorSpinner.setBorder(null);
 		JComponent jStrokeFactorSpinnerComp = jStrokeFactorSpinner.getEditor();
 		JSpinner.DefaultEditor strokeSpinnerEditor = (JSpinner.DefaultEditor) jStrokeFactorSpinnerComp;
@@ -208,14 +216,14 @@ public class View extends JFrame {
 		JPanel layers = new JPanel();
 		layers.setLayout(new GridLayout(1, 2));
 
-		JTextField layersText = new JTextField(controller.getLocaleText("layers")+ ":");
+		JTextField layersText = new JTextField(controller.getLocaleText("layers") + ":");
 		layersText.setToolTipText(controller.getLocaleText("layers_count"));
 		layersText.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		layersText.setFocusable(false);
 		layersText.setEditable(false);
 		layersText.setBorder(null);
 
-		JSpinner layerSpinner = new JSpinner(new SpinnerNumberModel(controller.getLayers(), 1, 30, 1));
+		JSpinner layerSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 30, 1));
 		layerSpinner.setToolTipText(controller.getLocaleText("min_lum"));
 		layerSpinner.setBorder(null);
 		JComponent layerSpinnerEditor = layerSpinner.getEditor();
@@ -236,13 +244,14 @@ public class View extends JFrame {
 
 	private JComponent getFigureChoserContainer() {
 		JPanel chooseFigure = new JPanel(new GridLayout(1, 2));
-		JTextField textFigure = new JTextField(controller.getLocaleText("figure")+":");
+		JTextField textFigure = new JTextField(controller.getLocaleText("figure") + ":");
 		textFigure.setToolTipText(controller.getLocaleText("figure_tip"));
 		textFigure.setEditable(false);
 		textFigure.setFocusable(false);
 		textFigure.setBorder(null);
 		textFigure.setHorizontalAlignment((int) CENTER_ALIGNMENT);
-		String[] arr = { controller.getLocaleText("line"), controller.getLocaleText("circle"), controller.getLocaleText("x") };
+		String[] arr = { controller.getLocaleText("line"), controller.getLocaleText("circle"),
+				controller.getLocaleText("x") };
 		JSpinner figSpinner = new JSpinner(new SpinnerListModel(arr));
 		figSpinner.setBorder(null);
 		JComponent figEditor = figSpinner.getEditor();
@@ -298,22 +307,20 @@ public class View extends JFrame {
 
 			setTitle(controller.getLocaleText("program_name"));
 			controller.loadImage();
-
+			JPanel temp;
+			rightContainer.removeAll();
 			if (controller.isLoaded()) {
-				rightContainer.removeAll();
-				JPanel temp = new PreView(controller);
-				rightContainer.add(temp);
-				CardLayout cl = (CardLayout) rightContainer.getLayout();
-				cl.show(rightContainer, "");
-				validate();
+				temp = new PreView(controller);
 			} else {
-				rightContainer.add(stubImage);
-				CardLayout cl = (CardLayout) rightContainer.getLayout();
-				cl.show(rightContainer, "");
-				validate();
+				temp = stubImage;
 			}
+			rightContainer.add(temp);
+			CardLayout cl = (CardLayout) rightContainer.getLayout();
+			cl.show(rightContainer, "");
+			validate();
 
 		});
+		buttonContainer.put("load", imageChooser);
 		return imageChooser;
 	}
 
@@ -335,12 +342,13 @@ public class View extends JFrame {
 			controller.setLayers(layers);
 			controller.setFigure(figure);
 			controller.setRandom(rnd);
-			controller.showImage();
+			controller.parseImage();
 
 			workTime = (System.currentTimeMillis() - time) / 1000d;
 			setTitle(String.format(controller.getLocaleText("img_prev_time"), workTime));
 
 		});
+		buttonContainer.put("proc", processImage);
 		return processImage;
 	}
 
@@ -351,7 +359,7 @@ public class View extends JFrame {
 			controller.saveImage();
 			setTitle(String.format(controller.getLocaleText("saved_word_done"), workTime));
 		});
-
+		buttonContainer.put("save", saveImage);
 		return saveImage;
 	}
 
@@ -362,7 +370,7 @@ public class View extends JFrame {
 			List<Float> settings = new AlgorithmSettingsView(controller).getSettings();
 			controller.createPath(settings);
 		});
-
+		buttonContainer.put("createpath", constructPath);
 		return constructPath;
 	}
 
@@ -372,20 +380,61 @@ public class View extends JFrame {
 		testButton.addActionListener(e -> {
 			controller.createSVG();
 		});
+		buttonContainer.put("createsvg", testButton);
 		return testButton;
 	}
 
 	private JComponent createGCodeButton() {
 		JButton gcode = new JButton(controller.getLocaleText("GCODE"));
 		gcode.setFocusable(false);
-		gcode.addActionListener(e -> {
+		gcode.addActionListener(e -> {			
 			controller.createGCode();
 		});
+		buttonContainer.put("creategcode", gcode);
 		return gcode;
 	}
 
 	public int getChungSize() {
 		return size;
+	}
+
+	private void startViewSupportThread() {
+		Thread support = new Thread(() -> {
+			while (!Thread.currentThread().isInterrupted()) {
+				if (controller.isProcessWindowShowed()) {
+					buttonContainer.values().forEach(e -> e.setEnabled(false));
+					continue;
+				}
+				if (!controller.isLoaded()) {
+					buttonContainer.entrySet().stream().filter(e -> !e.getKey().equals("load"))
+							.forEach(e -> e.getValue().setEnabled(false));
+				} else {
+					buttonContainer.get("proc").setEnabled(true);
+					buttonContainer.get("load").setEnabled(true);
+					if (controller.isProcessed()) {
+						buttonContainer.get("save").setEnabled(true);
+						buttonContainer.get("createpath").setEnabled(true);
+						if (controller.isPatsCreated()) {
+							buttonContainer.get("creategcode").setEnabled(true);
+							buttonContainer.get("createsvg").setEnabled(true);
+						}
+					} else {
+						buttonContainer.get("createsvg").setEnabled(false);
+						buttonContainer.get("creategcode").setEnabled(false);
+						buttonContainer.get("createpath").setEnabled(false);
+						buttonContainer.get("save").setEnabled(false);
+					}
+				}
+				try {
+					TimeUnit.MILLISECONDS.sleep(200);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		support.setDaemon(true);
+		support.setName("main-view-support-thread");
+		support.start();
 	}
 
 }

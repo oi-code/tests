@@ -10,21 +10,20 @@ import java.util.List;
 import ImageConvertor.views.desktop.View;
 
 public class GCodeCreator {
-	private static final float PIXEL_SIZE = 0.207f;
-	private static final short[] A4_SHEET = new short[] { /* 210, 297 */200, 280 };
-	private static final String SERVO_UP = "M5 S0";
-	private static final String SERVO_DOWN = "M3 S30";
-	private static final String SERVO_DELAY = "G4 P0.1";
+	private float pixelSize = 0.207f;
+	private short[] a4Sheet = new short[] { 210, 297 };
+	private String up = "M5 S0";
+	private String down = "M3 S30";
+	private String delayString = "G4 P0.1";
 
 	Controller controller;
 	private List<List<Point>> path;
 	private StringBuilder sb;
 	private int width;
 	private int height;
-	private short chunkSize;
-	private int chunks;
+	private float scale;
 
-	public GCodeCreator(Controller controller) {
+	public GCodeCreator(Controller controller, List<String> settings) {
 		super();
 		this.controller = controller;
 		path = new ArrayList<>();
@@ -42,23 +41,28 @@ public class GCodeCreator {
 		sb = new StringBuilder();
 		width = controller.getImageWidth();
 		height = controller.getImageHeight();
-		chunkSize = controller.getChunkSize();
-		chunks = controller.getChunks();
+
+		up = settings.get(0);
+		down = settings.get(1);
+		delayString = settings.get(2);
+		scale = Float.valueOf(settings.get(3)).floatValue();
+
 		createGCode();
 		saveGCode();
 	}
 
 	private void createGCode() {
-		String servoUpCutPath = SERVO_UP + "\n" + SERVO_DELAY + "\n";
-		String servoDownCutPath = SERVO_DOWN + "\n" + SERVO_DELAY + "\n";
+		String servoUpCutPath = up + "\n" + delayString + "\n";
+		String servoDownCutPath = down + "\n" + delayString + "\n";
 
-		float imageRealWidth = width * PIXEL_SIZE;
-		float imageRealHeight = height * PIXEL_SIZE;
+		float imageRealWidth = width * pixelSize;
+		float imageRealHeight = height * pixelSize;
 
-		float scaleHeight = A4_SHEET[0] / imageRealWidth;
-		float scaleWidth = A4_SHEET[1] / imageRealHeight;
+		float scaleHeight = a4Sheet[0] / imageRealWidth;
+		float scaleWidth = a4Sheet[1] / imageRealHeight;
 
-		float scaler = Math.min(scaleHeight, scaleWidth);
+		
+		float scaler = Math.min(scaleHeight, scaleWidth);		
 
 		int chunkSize = controller.getChunkSize();
 		int maxConnectedRange = 10;
@@ -74,8 +78,7 @@ public class GCodeCreator {
 			sb.append(servoUpCutPath);
 			isUp = true;
 			Point prev = list.get(0);
-			sb.append(
-					String.format(pathTemplate, prev.getX() * PIXEL_SIZE * scaler, prev.getY() * PIXEL_SIZE * scaler));
+			sb.append(String.format(pathTemplate, prev.getX() * pixelSize * scaler, prev.getY() * pixelSize * scaler));
 			sb.append(servoDownCutPath);
 			for (Point cur : list) {
 				if (isUp) {
@@ -86,8 +89,8 @@ public class GCodeCreator {
 					sb.append(servoUpCutPath);
 					isUp = true;
 				}
-				double curX = cur.getX() * PIXEL_SIZE;
-				double curY = cur.getY() * PIXEL_SIZE;
+				double curX = cur.getX() * pixelSize;
+				double curY = cur.getY() * pixelSize;
 				sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 				prev = cur;
 			}

@@ -9,29 +9,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
-import ImageConvertor.data.ImageLoader;
 import ImageConvertor.data.State;
 import ImageConvertor.data.Points;
+import ImageConvertor.views.desktop.GCodeCreatorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
 import ImageConvertor.views.desktop.ViewProccessStatus;
@@ -40,36 +29,19 @@ public class Controller {
 
 	private boolean isProcessed;
 	private boolean isCanceled;
+	private boolean isPathsCreated;
+	private boolean isProcessWindowShowed;
 	private PathWorkerManager workerManager;
-	private CompletionService<List<Points>> service;
-	private ExecutorService exec; // = // Executors.newCachedThreadPool();
-	// Executors.newFixedThreadPool(View.N_THREADS);
-	public ArrayBlockingQueue<String> messageExchanger;
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
 	public Controller() {
-		getExecutorService();
 		getLocale();
-		messageExchanger = new ArrayBlockingQueue<String>(N_THREADS);
-		Thread helper = new Thread(() -> {
-			if (messageExchanger.size() > 50) {
-				messageExchanger.clear();
-			}
-			try {
-				TimeUnit.SECONDS.sleep(1);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-		helper.setName("controller message exchanger observer");
-		helper.setDaemon(true);
-		helper.start();
 	}
 
 	private void getLocale() {
 		Properties prop = new Properties();
-		String defLoc = "ru_RU";// Locale.getDefault().toString();
+		String defLoc = Locale.getDefault().toString();
 		try {
 			InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
 			InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
@@ -147,7 +119,7 @@ public class Controller {
 	}
 
 	public void loadImage() {
-		ImageLoader imageLoader = new ImageLoader();
+		ImageLoader imageLoader = new ImageLoader(this);
 
 		BufferedImage img = imageLoader.loadImage();
 		if (img == null) {
@@ -170,23 +142,14 @@ public class Controller {
 		return STATE.isLoaded();
 	}
 
-	private void getPointsList() {
-		/*
-		 * Thread worker = new Thread(() -> {
-		 * ImageParser parser = new ImageParser(this);
-		 * STATE.setAllLayersContainer(parser.doTask());
-		 * });
-		 * worker.setDaemon(true);
-		 * worker.start();
-		 */
-	}
-
 	public void createPath(List<Float> settings) {
 		isProcessed = false;
 		isCanceled = false;
+		isPathsCreated = false;
 		if (settings == null || settings.size() < 5) {
 			isCanceled = true;
-			isProcessed = true;
+			isProcessed = false;
+			isPathsCreated = false;
 			return;
 		}
 		int totalConnectedPointsLimit = settings.get(0).intValue();
@@ -201,56 +164,65 @@ public class Controller {
 		if (isCanceled) {
 			return;
 		}
-		Runnable t = () -> {
-			messageExchanger.clear();
-			/*
-			 * Thread view = new Thread(new ViewProccessStatus(this));
-			 * view.setDaemon(true);
-			 * view.start();
-			 */
-			exec.submit(new ViewProccessStatus(this));
+		Thread t = new Thread(() -> {
+			ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
+			Thread view = new Thread(new ViewProccessStatus(this, queue));
+			view.setDaemon(true);
+			view.start();
+			// SwingUtilities.invokeLater(view);
+
 			workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
-					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate);
+					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
 			workerManager.getPath();
-			isProcessed = true;
-			// view.interrupt();
+			if (isCanceled) {
+				isProcessed = false;
+			} else {
+				isProcessed = true;
+				isPathsCreated = true;
+			}
+			view.interrupt();
 			new PathsImagePreview(this).showImage();
-		};
-		exec.submit(t);
-		/*
-		 * t.setName("Controller support thread pathCreate");
-		 * t.setDaemon(true);
-		 * t.start();
-		 */
+		});
+
+		t.setName("Controller support thread pathCreate");
+		t.setDaemon(true);
+		t.start();
+
 	}
 
-	public void showImage() {
+	public void parseImage() {
 		isProcessed = false;
-		Runnable worker = () -> {
-			messageExchanger.clear();
-			/*
-			 * Thread view = new Thread(new ViewProccessStatus(this));
-			 * view.setDaemon(true);
-			 * view.start();
-			 */
-			exec.submit(new ViewProccessStatus(this));
-			// getPointsList();
-			ImageParserWorker parser = new ImageParserWorker(this);
+		isCanceled = false;
+		Thread worker = new Thread(() -> {
+			ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
+			Thread view = new Thread(new ViewProccessStatus(this, queue));
+			view.setDaemon(true);
+			view.start();
+			ImageParserWorker parser = new ImageParserWorker(this, queue);
 			STATE.setAllLayersContainer(parser.doTask());
-			/*
-			 * STATE.setParsedImage(new ParsedImagePreview(this));
-			 * STATE.getParsedImage().showImage();
-			 */
-			isProcessed = true;
-			// view.interrupt();
-			new ParsedImagePreview(this).showImage();
-		};
-		/*
-		 * worker.setName("Controller support thread parseImage");
-		 * worker.setDaemon(true);
-		 * worker.start();
-		 */
-		exec.submit(worker);
+			if (isCanceled) {
+				isProcessed = false;
+			} else {
+				isProcessed = true;
+			}
+			view.interrupt();
+			STATE.setParsedImage(new ParsedImagePreview(this));
+			STATE.getParsedImage().showImage();
+		});
+
+		worker.setName("Controller support thread parseImage");
+		worker.setDaemon(true);
+		worker.start();
+
+	}
+
+	public void createGCode() {
+		GCodeCreatorView gview = new GCodeCreatorView(this);
+		List<String> settings = gview.getSettings();
+		if (settings == null) {
+			return;
+		}
+		new GCodeCreator(this, settings);
 	}
 
 	public short getChunkSize() {
@@ -295,31 +267,11 @@ public class Controller {
 	}
 
 	public void cancelTask() {
-		if (!exec.isShutdown()) {
-			exec.shutdownNow();
-			getExecutorService();
-		}
+		isCanceled = true;
 		if (workerManager != null) {
 			workerManager.cancelTask();
 			workerManager = null;
 		}
-
-		isProcessed = true;
-	}
-
-	private void getExecutorService() {
-		exec = Executors.newFixedThreadPool(N_THREADS*2);
-	}
-
-	public CompletionService<List<Points>> getService() {
-		if (service == null) {
-			service = new ExecutorCompletionService<>(exec);
-		}
-		return service;
-	}
-
-	public void createGCode() {
-		new GCodeCreator(this);
 	}
 
 	public boolean isProcessed() {
@@ -330,6 +282,20 @@ public class Controller {
 		this.isCanceled = isCanceled;
 	}
 
+	public boolean isCanceled() {
+		return isCanceled;
+	}
+
+	public boolean isPatsCreated() {
+		return isPathsCreated;
+	}
+
+	/*
+	 * public void setPatsCreated(boolean isPatsCreated) {
+	 * this.isPatsCreated = isPatsCreated;
+	 * }
+	 */
+
 	public void setFinalList(List<List<Point>> finalList) {
 		STATE.setChosedLayers(finalList);
 	}
@@ -338,20 +304,20 @@ public class Controller {
 		return STATE.getChosedLayers();
 	}
 
-	public String pollMessage() {
-		return messageExchanger.poll();
-	}
-
-	public void offerMessage(String string) {
-		messageExchanger.offer(string);
-	}
-
 	public List<List<Point>> getPathsPointList() {
 		return STATE.getPathsPointList();
 	}
 
 	public void setPathsPointList(List<List<Point>> finalList) {
 		STATE.setPathsPointList(finalList);
+	}
+
+	public boolean isProcessWindowShowed() {
+		return isProcessWindowShowed;
+	}
+
+	public void setProcessWindowShowed(boolean isProcessWindowShowed) {
+		this.isProcessWindowShowed = isProcessWindowShowed;
 	}
 
 }

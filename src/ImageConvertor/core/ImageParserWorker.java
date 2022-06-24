@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import javax.swing.JOptionPane;
@@ -16,16 +20,17 @@ import ImageConvertor.data.Points;
 public class ImageParserWorker {
 
 	private Controller controller;
-	private CompletionService<List<Points>> service;
+	private ExecutorService exec = Executors.newFixedThreadPool(Controller.N_THREADS * 2);
+	private CompletionService<List<Points>> service = new ExecutorCompletionService<List<Points>>(exec);
+	private ArrayBlockingQueue<String> queue;
 
-	public ImageParserWorker(Controller c) {
+	public ImageParserWorker(Controller c, ArrayBlockingQueue<String> queue) {
 		controller = c;
-		service = controller.getService();
+		this.queue = queue;
 	}
 
 	public List<List<Points>> doTask() {
-		controller.messageExchanger.clear();
-		controller.offerMessage(controller.getLocaleText("processing"));
+		queue.offer(controller.getLocaleText("processing"));
 		Runtime.getRuntime().gc();
 		float lumStep = 1f / controller.getLayers();
 		float start = 0f;
@@ -36,8 +41,8 @@ public class ImageParserWorker {
 			steps.add(start);
 		}
 		List<List<Points>> results = new ArrayList<List<Points>>();
-
 		for (int i = 0; i < steps.size() - 1; i++) {
+
 			SingleThreadParseImage temParseImage = new SingleThreadParseImage(controller);
 			temParseImage.setMinLum(steps.get(i));
 			temParseImage.setMaxLum(steps.get(i + 1));
@@ -48,17 +53,27 @@ public class ImageParserWorker {
 					return result;
 				}
 			});
+
 		}
 		int currentTask = 0;
 		for (int i = 0; i < steps.size() - 1; i++) {
+			if (controller.isCanceled()) {
+				exec.shutdownNow();
+				break;
+			}
 			try {
 				Future<List<Points>> temp = service.take();
 				if (temp.isDone()) {
 					List<Points> res = temp.get();
 					results.add(res);
-					controller.messageExchanger
-							.offer(String.format(controller.getLocaleText("current_layer") + ": %d", currentTask++));
+					queue.offer(String.format(controller.getLocaleText("current_layer") + ": %d", currentTask++));
 				} else {
+					if (controller.isCanceled()) {
+						exec.shutdownNow();
+						JOptionPane.showMessageDialog(null, controller.getLocaleText("cancel_task"),
+								controller.getLocaleText("canceled"), JOptionPane.INFORMATION_MESSAGE);
+						return null;
+					}
 					continue;
 				}
 			} catch (InterruptedException | ExecutionException e) {
@@ -69,9 +84,15 @@ public class ImageParserWorker {
 		}
 		for (Iterator<List<Points>> iterator = results.iterator(); iterator.hasNext();) {
 			List<Points> list = iterator.next();
+			if (list == null) {
+				continue;
+			}
 			if (list.size() < 1) {
 				iterator.remove();
 			}
+		}
+		if (results == null) {
+			return null;
 		}
 		Collections.sort(results, (o1, o2) -> {
 			return Float.compare(o2.get(0).layer, o1.get(0).layer);

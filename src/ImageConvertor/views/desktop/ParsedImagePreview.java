@@ -9,7 +9,9 @@ import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
@@ -19,17 +21,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.imageio.ImageIO;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -46,10 +43,10 @@ public class ParsedImagePreview extends JPanel
 	List<List<Points>> allLayersContainer;
 	Short s;
 	String figure;
-	JFrame j;
+	JFrame mainPanel;
 	JScrollPane jsp;
 	Point p;
-	JFrame layers;
+	JFrame layersBox;
 	List<JCheckBox> boxes;
 	ThreadLocalRandom tlr = ThreadLocalRandom.current();
 	int width;
@@ -59,41 +56,31 @@ public class ParsedImagePreview extends JPanel
 
 	public ParsedImagePreview(Controller controllerr) {
 		controller = controllerr;
-		// forDraw = controller.getPointsList();
 		allLayersContainer = controllerr.getAllLayersContainer();
 		s = controller.getChunkSize();
 		figure = controller.getFigure();
 		width = controller.getImageWidth();
 		height = controller.getImageHeight();
-		j = new JFrame();
-		j.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		j.setTitle(controller.getLocaleText("img_prev"));
-		j.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
-		j.setLocationRelativeTo(null);
 
-		boxes = new ArrayList<JCheckBox>();
+		mainPanel = new JFrame();
+		mainPanel.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		mainPanel.setTitle(controller.getLocaleText("img_prev"));
+		mainPanel.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
+		mainPanel.setLocationRelativeTo(null);
 
-		layers = new JFrame(controller.getLocaleText("layer_csr"));
-		layers.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		getLayersBoxFrame();
 
-		layers.setLocation(j.getLocation().x - 210, j.getLocation().y);
-		layers.setLayout(new GridLayout(10, 3));
-		layers.setSize(225, 300);// (forDraw.size()+1)*40);
-		for (int i = 0; i < allLayersContainer.size(); i++) {
-			JCheckBox temp = new JCheckBox(controller.getLocaleText("layer") + ": " + (i + 1));
-			temp.setFocusable(false);
-			boxes.add(temp);
-			layers.add(temp);
-		}
-		int select = boxes.size() / 4;
-		boxes.get(select).setSelected(true);
-		layers.setVisible(true);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
+
+		if (controller.isCanceled() || allLayersContainer == null) {
+			layersBox.setVisible(false);
+			mainPanel.setVisible(false);
+			return;
+		}
 		setOpaque(false);
 		layerCount = -1;
 		setSize(width, height);
@@ -103,18 +90,20 @@ public class ParsedImagePreview extends JPanel
 		g2.fillRect(0, 0, width, height);
 		g2.setColor(Color.GRAY);
 		g2.setStroke(new BasicStroke(controller.getStroke()));
-		if (allLayersContainer == null) {
+		if (controller.isCanceled() || allLayersContainer == null) {
+			layersBox.setVisible(false);
+			mainPanel.setVisible(false);
 			return;
 		}
 		controller.getForDrawContainer().clear();
 		for (List<Points> currentDrawingList : allLayersContainer) {
+
 			layerCount++;
 			repaint();
 			if (!boxes.get(layerCount).isSelected()) {
 				continue;
 			}
 			controller.getForDrawContainer().add(currentDrawingList);
-
 			for (Points innerCurrentPoints : currentDrawingList) {
 
 				if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
@@ -153,22 +142,25 @@ public class ParsedImagePreview extends JPanel
 		 * new LayeredPaneExample(img);
 		 */
 
-		j.addMouseListener(this);
-		j.addMouseMotionListener(this);
-		j.addMouseWheelListener(this);
-		j.addWindowListener(this);
+		mainPanel.addMouseListener(this);
+		mainPanel.addMouseMotionListener(this);
+		mainPanel.addMouseWheelListener(this);
+		mainPanel.addWindowListener(this);
 
-		j.add(this);
-		j.setVisible(true);
+		mainPanel.add(this);
+		if (controller.isCanceled()) {
+			mainPanel.setVisible(false);
+			layersBox.setVisible(false);
+		}
 	}
 
 	public void removeListeners() {
 		allLayersContainer.clear();
 		allLayersContainer = null;
-		j.removeMouseListener(this);
-		j.removeMouseMotionListener(this);
-		j.removeMouseWheelListener(this);
-		j.removeWindowListener(this);
+		mainPanel.removeMouseListener(this);
+		mainPanel.removeMouseMotionListener(this);
+		mainPanel.removeMouseWheelListener(this);
+		mainPanel.removeWindowListener(this);
 	}
 
 	public void saveImage() {
@@ -198,16 +190,20 @@ public class ParsedImagePreview extends JPanel
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		int thisX = getLocation().x;
-		int thisY = getLocation().y;
+		try {
+			int thisX = getLocation().x;
+			int thisY = getLocation().y;
 
-		int xMoved = (thisX + e.getX()) - (thisX + p.x);
-		int yMoved = (thisY + e.getY()) - (thisY + p.y);
+			int xMoved = (thisX + e.getX()) - (thisX + p.x);
+			int yMoved = (thisY + e.getY()) - (thisY + p.y);
 
-		int X = thisX + xMoved / 10;
-		int Y = thisY + yMoved / 10;
+			int X = thisX + xMoved / 10;
+			int Y = thisY + yMoved / 10;
 
-		setLocation(X, Y);
+			setLocation(X, Y);
+		} catch (NullPointerException exc) {
+			// TODO: handle exception
+		}
 		// repaint();
 	}
 
@@ -241,13 +237,13 @@ public class ParsedImagePreview extends JPanel
 		if (e.getWheelRotation() > 0) {
 			count++;
 			width = controller.getImageWidth() / count;
-			height = controller.getImageHeight() / count;
+			height = (controller.getImageHeight() + 55) / count;
 		} else if (e.getWheelRotation() < 0) {
 			count = 1;
 			width = controller.getImageWidth();
-			height = controller.getImageHeight();
+			height = controller.getImageHeight() + 55;
 		}
-		j.setSize(width, height);
+		mainPanel.setSize(width, height);
 		repaint();
 	}
 
@@ -257,9 +253,8 @@ public class ParsedImagePreview extends JPanel
 
 	@Override
 	public void windowClosing(WindowEvent e) {
-		layers.disable();
-		layers.dispose();
-		layers = null;
+		layersBox.dispose();
+		layersBox = null;
 	}
 
 	@Override
@@ -281,41 +276,96 @@ public class ParsedImagePreview extends JPanel
 	@Override
 	public void windowDeactivated(WindowEvent e) {
 	}
-}
 
-class LayeredPaneExample extends JFrame {
+	private JButton getButtonForLayers() {
+		JButton button = new JButton(controller.getLocaleText("select_all"));
+		button.setPreferredSize(new Dimension(layersBox.getWidth(), (int)(layersBox.getHeight()*0.1f)));
+		button.setFocusable(false);
+		button.addActionListener(e -> {
+			if (button.getText().equals(controller.getLocaleText("select_all"))) {
+				button.setText(controller.getLocaleText("unselect_all"));
+				for (JCheckBox box : boxes) {
+					box.setSelected(true);
+				}
+			} else {
+				button.setText(controller.getLocaleText("select_all"));
+				for (JCheckBox box : boxes) {
+					box.setSelected(false);
+				}
+			}
+		});
+		return button;
+	}
 
-	BufferedImage im;
+	private JFrame getLayersBoxFrame() {
 
-	public LayeredPaneExample(BufferedImage im) {
-		super("Preview Image");
-		this.im = im;
-		setSize(600, 600);
-		JLayeredPane pane = getLayeredPane();
-		JLayeredPane formaPanel = new JLayeredPane();
-		formaPanel.setBounds(0, 0, 600, 600);
-		formaPanel.setLayout(new BoxLayout(formaPanel, BoxLayout.Y_AXIS));
-		formaPanel.setLayout(null);
-		BufferedImage img;
-		JLabel label;
-		JScrollPane scroll;
-		try {
-			img = im;
-			ImageIcon icon = new ImageIcon(img);
-			label = new JLabel(icon);
+		layersBox = new JFrame(controller.getLocaleText("layer_csr"));
+		layersBox.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		layersBox.setLocation(mainPanel.getLocation().x - 240, mainPanel.getLocation().y);
+		layersBox.setLayout(new BorderLayout());
+		layersBox.setSize(250, 300);// (forDraw.size()+1)*40);
 
-			scroll = new JScrollPane(label, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-					JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-			formaPanel.add(scroll);
-			// without THIS DON'T WORK!!!!
-			scroll.setBounds(1, 30, 585, 562); // !!!!!!!!!!!!!!!!!!<-------------------------
-
-			pane.add(formaPanel);
-		} catch (Exception e) {
-			e.printStackTrace();
+		JPanel topPanel = new JPanel();
+		topPanel.setLayout(new GridLayout(10, 3));
+		boxes = new ArrayList<JCheckBox>();
+		for (int i = 0; i < allLayersContainer.size(); i++) {
+			JCheckBox temp = new JCheckBox(controller.getLocaleText("layer") + ": " + (i + 1));
+			temp.setFocusable(false);
+			boxes.add(temp);
+			topPanel.add(temp);
 		}
-		setLocationRelativeTo(null);
-		setResizable(false);
-		setVisible(true);
+		int select = boxes.size() / 4;
+		boxes.get(select).setSelected(true);
+		if (!controller.isCanceled()) {
+			layersBox.setVisible(true);
+			mainPanel.setVisible(true);
+		}
+
+		JPanel buttonContainer = new JPanel();
+		buttonContainer.add(getButtonForLayers());
+
+		layersBox.add(topPanel, BorderLayout.CENTER);
+		layersBox.add(buttonContainer, BorderLayout.SOUTH);
+
+		return layersBox;
 	}
 }
+
+/*
+ * class LayeredPaneExample extends JFrame {
+ * 
+ * BufferedImage im;
+ * 
+ * public LayeredPaneExample(BufferedImage im) {
+ * super("Preview Image");
+ * this.im = im;
+ * setSize(600, 600);
+ * JLayeredPane pane = getLayeredPane();
+ * JLayeredPane formaPanel = new JLayeredPane();
+ * formaPanel.setBounds(0, 0, 600, 600);
+ * formaPanel.setLayout(new BoxLayout(formaPanel, BoxLayout.Y_AXIS));
+ * formaPanel.setLayout(null);
+ * BufferedImage img;
+ * JLabel label;
+ * JScrollPane scroll;
+ * try {
+ * img = im;
+ * ImageIcon icon = new ImageIcon(img);
+ * label = new JLabel(icon);
+ * 
+ * scroll = new JScrollPane(label, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+ * JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+ * formaPanel.add(scroll);
+ * // without THIS DON'T WORK!!!!
+ * scroll.setBounds(1, 30, 585, 562); // !!!!!!!!!!!!!!!!!!<-------------------------
+ * 
+ * pane.add(formaPanel);
+ * } catch (Exception e) {
+ * e.printStackTrace();
+ * }
+ * setLocationRelativeTo(null);
+ * setResizable(false);
+ * setVisible(true);
+ * }
+ * }
+ */

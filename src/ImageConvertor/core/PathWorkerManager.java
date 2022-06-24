@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,6 @@ public class PathWorkerManager {
 	List<Points> tmp;
 	List<List<Points>> cur;
 	Points[][] copyPoints;
-	// CompletionService<Object[]> service = new ExecutorCompletionService<>(View.EXECUTOR_SERVICE);
 	boolean isCanceled = false;
 
 	private int maxRange;
@@ -43,13 +43,13 @@ public class PathWorkerManager {
 	private float pathLengthDivider;
 	private int iterationsCount;
 	private float initalPathDivider;
-	private float vaporizeDelimiter;
+	private float vaporizeDivider;
+	private ArrayBlockingQueue<String> queue;
 
 	public PathWorkerManager(Controller controller, int totalConnectedPointsLimit, int limitConnectedPoints,
 			float rangeRate, float weightRate, float pathLengthDivider, int maxRange, float initalPathDivider,
-			int iterationsCount, float vaporizeDelimiter) {
+			int iterationsCount, float vaporizeDivider, ArrayBlockingQueue<String> queue) {
 		this(controller);
-		this.controller = controller;
 		this.totalConnectedPointsLimit = totalConnectedPointsLimit;
 		this.limitConnectedPoints = limitConnectedPoints;
 		this.rangeRate = rangeRate;
@@ -58,7 +58,8 @@ public class PathWorkerManager {
 		this.maxRange = maxRange;
 		this.iterationsCount = iterationsCount;
 		this.initalPathDivider = initalPathDivider;
-		this.vaporizeDelimiter=vaporizeDelimiter;
+		this.vaporizeDivider = vaporizeDivider;
+		this.queue=queue;
 	}
 
 	private PathWorkerManager(Controller c) {
@@ -72,16 +73,18 @@ public class PathWorkerManager {
 		while (boundHeight < imageHeight) {
 			boundHeight += chunkSize;
 		}
+		pointsList = controller.getForDrawContainer();
+		clearIsLockedFlagInAllPoints();
 	}
 
 	private void reloadPointsContainer() {
-		pointsList = controller.getForDrawContainer();
 		pathContainer.clear();
+		if(pointsList.size()>0) {
 		for (int i = 0; i < pointsList.size(); i++) {
 			pathContainer.add(getMatrix(i));
 		}
 		fillPathMatrix();
-		controller.setChunks(searchMatrix[0].length);
+		controller.setChunks(searchMatrix[0].length);}
 	}
 
 	private Points[][] getMatrix(int nextList) {
@@ -98,15 +101,15 @@ public class PathWorkerManager {
 		Set<Points> cnt = new HashSet<>();
 		while (recursionInit(cnt)) {
 
-			//System.out.println("init path creator...");
-			controller.offerMessage("init path creator...");
-			//System.out.println("start create matrix");
-			controller.offerMessage("start create matrix");
+			// System.out.println("init path creator...");
+			queue.offer(controller.getLocaleText("init_path_construcctor"));
+			// System.out.println("start create matrix");
+			queue.offer(controller.getLocaleText("start_create_matrix"));
 
 			Edge[][] ajMatrix = createAdjacencyMatrix();
 
-			//System.out.println("matrix created, start compute");
-			controller.offerMessage("matrix created, start compute");
+			// System.out.println("matrix created, start compute");
+			queue.offer(controller.getLocaleText("matrix_created"));
 
 			List<Points> currentIterationBestPath = null;
 			AtomicInteger counter = new AtomicInteger(0);
@@ -122,8 +125,10 @@ public class PathWorkerManager {
 				counter.incrementAndGet();
 			});
 			while (iterations < iterationsCount && !isCanceled) {
-				//System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
-				controller.offerMessage(String.format("next iteration started %d, length: %f", iterations, lgth));
+				// System.out.println(String.format("next iteration started %d, length: %f", iterations, lgth));
+				queue.offer(String.format(controller.getLocaleText("next_iteration"), iterations, lgth));
+				// controller.messageExchanger.offer(String.format("next iteration started %d, length: %f",
+				// iterations, lgth));
 				while (counter.get() > 0 && !isCanceled) {
 					try {
 						for (PathWorker w : workers) {
@@ -139,9 +144,9 @@ public class PathWorkerManager {
 						e.printStackTrace();
 					}
 				}
-				controller.offerMessage("update weights...");
+				queue.offer(controller.getLocaleText("upd_weights"));
 				vaporizeMatrixWeight(ajMatrix);
-				controller.offerMessage("update weights done.");
+				queue.offer(controller.getLocaleText("upd_weoghts_done"));
 				paths.entrySet().stream().forEach(e -> {
 					float length_ = e.getKey();
 					List<Edge> edges = e.getValue();
@@ -168,8 +173,8 @@ public class PathWorkerManager {
 					}
 				}
 			}
-			//System.out.println("all threads died.");
-			controller.offerMessage("all threads died.");
+			// System.out.println("all threads died.");
+			queue.offer(controller.getLocaleText("threads_die"));
 			if (isCanceled) {
 				return;
 			}
@@ -236,8 +241,8 @@ public class PathWorkerManager {
 		if (isCanceled) {
 			return;
 		}
-		//System.out.println("compute end. start draw");
-		controller.offerMessage("compute end. start draw");
+		// System.out.println("compute end. start draw");
+		queue.offer(controller.getLocaleText("comp_end"));
 		controller.setPathsPointList(finalList);
 		// System.out.println(finalList.size());
 		// PathsImagePreview pip = new PathsImagePreview(controller, finalList);
@@ -308,8 +313,8 @@ public class PathWorkerManager {
 		if (isCanceled) {
 			return false;
 		}
-		//System.out.println("rec init");
-		controller.offerMessage("rec init");
+		// System.out.println("rec init");
+		queue.offer(controller.getLocaleText("rec_init"));
 		reloadPointsContainer();
 		int count = 0;
 		for (int i = 0; i < searchMatrix.length; i++) {
@@ -320,15 +325,15 @@ public class PathWorkerManager {
 				}
 			}
 		}
-		//System.out.println("freePoints: " + count);
-		controller.offerMessage("freePoints: " + count);
+		// System.out.println("freePoints: " + count);
+		queue.offer(controller.getLocaleText("free_points") + ": " + count);
 
 		short[] entry = getEntryPoint();
 		int w = entry[1];
 		int h = entry[0];
 		if (h == -1 || w == -1) {
-			//System.out.println("CANT FIND ENTRY");
-			controller.offerMessage("CANT FIND ENTRY");
+			// System.out.println("CANT FIND ENTRY");
+			queue.offer(controller.getLocaleText("cant_find_entry"));
 			return false;
 		}
 		// Set<Points> result = new HashSet<>();
@@ -337,8 +342,8 @@ public class PathWorkerManager {
 		recursion(cur, result);
 
 		tmp = result.stream().collect(Collectors.toList());
-		//System.out.println("counted points: " + result.size());
-		controller.offerMessage("counted points: " + result.size());
+		// System.out.println("counted points: " + result.size());
+		queue.offer(controller.getLocaleText("counted_points") + ": " + result.size());
 		if (result.size() < limitConnectedPoints) {
 			return recursionInit(result);
 		}
@@ -349,8 +354,8 @@ public class PathWorkerManager {
 		 * }
 		 * copyPoints = copy;
 		 */
-		//System.out.println("rec finished");
-		controller.offerMessage("rec finished");
+		// System.out.println("rec finished");
+		queue.offer(controller.getLocaleText("rec_fin"));
 		result.clear();
 		return true;
 	}
@@ -427,12 +432,12 @@ public class PathWorkerManager {
 				if (check(height, width)) {
 					ans[0] = height;
 					ans[1] = width;
-					//System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
+					// System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
 					return ans;
 				}
 			}
 		}
-		//System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
+		// System.out.println("next entry: " + ans[0] + " <-> " + ans[1]);
 		return ans;
 	}
 
@@ -476,7 +481,7 @@ public class PathWorkerManager {
 		for (int i = 0; i < ajMatrix.length; i++) {
 			for (int j = 0; j < ajMatrix[i].length; j++) {
 				if (ajMatrix[i][j] != null) {
-					ajMatrix[i][j].weight *= 0.62f;
+					ajMatrix[i][j].weight *= vaporizeDivider;
 				}
 			}
 		}
@@ -484,5 +489,15 @@ public class PathWorkerManager {
 
 	public void cancelTask() {
 		isCanceled = true;
+	}
+
+	private void clearIsLockedFlagInAllPoints() {
+		for (int i = 0; i < pointsList.size(); i++) {
+			for (Points p : pointsList.get(i)) {
+				if (p != null && p.locked) {
+					p.locked = false;
+				}
+			}
+		}
 	}
 }

@@ -1,9 +1,7 @@
 package ImageConvertor.views.desktop;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
@@ -12,11 +10,8 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
 
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -29,6 +24,7 @@ import javax.swing.text.InternationalFormatter;
 
 import ImageConvertor.core.Controller;
 
+@SuppressWarnings("serial")
 public class AlgorithmSettingsView extends JDialog {
 
 	Controller controller;
@@ -257,9 +253,9 @@ public class AlgorithmSettingsView extends JDialog {
 				}
 			}
 			settings = temp;
-			for (float f : temp) {
+			/*for (float f : temp) {
 				System.out.println(f);
-			}
+			}*/
 			dispose();
 		});
 
