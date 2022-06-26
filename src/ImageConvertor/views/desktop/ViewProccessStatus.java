@@ -6,14 +6,15 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -22,6 +23,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.text.JTextComponent;
 
 import ImageConvertor.core.Controller;
+import ImageConvertor.data.State;
 
 @SuppressWarnings("serial")
 public class ViewProccessStatus extends JDialog implements Runnable {
@@ -33,16 +35,13 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 	private Queue<String> messageExchanger;
 
 	public ViewProccessStatus(Controller controller, Queue<String> messageExchanger) {
-		//super(View.getInstance(), true);
+		// super(View.getInstance(), true);
 		this.controller = controller;
 		this.messageExchanger = messageExchanger;
 		setLayout(new BorderLayout());
 		setTitle(controller.getLocaleText("processing"));
-		// setModal(true);
-		// setModalityType(ModalityType.DOCUMENT_MODAL);
 		setAlwaysOnTop(true);
 		Thread.currentThread().setName("process_window_thread_helper");
-		// text = (JTextComponent) getTextLabel();
 		add(getButtonAndLoadingImageLabel(), BorderLayout.PAGE_END);
 		add(getTextLabel());
 		setSize(500, 200);
@@ -70,13 +69,20 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 			}
 		} finally {
 			controller.setProcessWindowShowed(false);
-			dispose();
+			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 		}
 		return;
 	}
 
 	JComponent getImageLabel() {
-		ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
+		InputStream is=State.class.getResourceAsStream("images/ezgif-4-66d70871c9.gif");
+		ImageIcon icon=null;
+		try {
+			icon=new ImageIcon(is.readAllBytes());			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		//ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
 		icon.setImage(icon.getImage().getScaledInstance(140, 40, Image.SCALE_DEFAULT));
 		JLabel label = new JLabel(icon);
 		return label;

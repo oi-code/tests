@@ -405,13 +405,13 @@ public class View extends JFrame {
 					buttonContainer.values().forEach(e -> e.setEnabled(false));
 					continue;
 				}
-				if (!controller.isLoaded()) {
+				if (!controller.isLoaded()&&!controller.isCanceled()) {
 					buttonContainer.entrySet().stream().filter(e -> !e.getKey().equals("load"))
 							.forEach(e -> e.getValue().setEnabled(false));
 				} else {
 					buttonContainer.get("proc").setEnabled(true);
 					buttonContainer.get("load").setEnabled(true);
-					if (controller.isProcessed()) {
+					if (controller.isProcessed()&&!controller.isCanceled()) {
 						buttonContainer.get("save").setEnabled(true);
 						buttonContainer.get("createpath").setEnabled(true);
 						if (controller.isPatsCreated()) {
@@ -426,7 +426,7 @@ public class View extends JFrame {
 					}
 				}
 				try {
-					TimeUnit.MILLISECONDS.sleep(200);
+					TimeUnit.MILLISECONDS.sleep(100);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

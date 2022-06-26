@@ -17,7 +17,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 	List<Points> pointsContainer;
 	AtomicInteger counter;
 	Map<Float, List<Edge>> paths;
-	Controller c;
+	Controller controller;
 	StringBuilder sb = new StringBuilder();
 	Object myMutex = new Object();
 
@@ -30,7 +30,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 	public PathWorker(Edge[][] matrix, List<Points> pointsContainer, Controller c, float rangeRate, float weightRate,
 			int startHeight, int threadIndex, AtomicInteger counter, Map<Float, List<Edge>> paths) {
 		this.matrix = matrix;
-		this.c = c;
+		this.controller = c;
 		this.rangeRate = rangeRate;
 		this.weightRate = weightRate;
 		this.pointsContainer = pointsContainer;
@@ -39,7 +39,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 		this.counter = counter;
 		this.paths = paths;
 		this.setDaemon(true);
-		this.setName("manual-thread-worker-"+ threadIndex);
+		this.setName("manual-thread-worker-" + threadIndex);
 	}
 
 	@Override
@@ -81,15 +81,17 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 				} else {
 					curHeight = nextEdge.heightIndex;
 				}
-				//length += nextEdge.distanceBetweenPoints;
+				// length += nextEdge.distanceBetweenPoints;
 				currentCountOfPoints++;
 			}
-			for(int i=1;i<currentEdgesList.size();i++) {
-				Point p1=pointsContainer.get(currentEdgesList.get(i-1).heightIndex).startPoint;
-				Point p2=pointsContainer.get(currentEdgesList.get(i).heightIndex).startPoint;
-				length+=p1.distance(p2);
+			for (int i = 1; i < currentEdgesList.size(); i++) {
+				Point p1 = pointsContainer.get(currentEdgesList.get(i - 1).heightIndex).startPoint;
+				Point p2 = pointsContainer.get(currentEdgesList.get(i).heightIndex).startPoint;
+				length += p1.distance(p2);
 			}
-			paths.put(length, currentEdgesList);
+			if (length > controller.getChunkSize()) {
+				paths.put(length, currentEdgesList);
+			}
 			counter.decrementAndGet();
 			isWorkDone = true;
 		}
@@ -98,60 +100,61 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 	@Override
 	public Object[] call() throws Exception {
 		throw new UnsupportedOperationException("NOT DEVELOPED");
-		/*int maxPathLength = matrix[0].length - 1;
-		int iter = 0;
-		List<Points> ans = null;
-		float minLength = Float.MAX_VALUE;
-		// while (iter < 1000) {
-		// for (int i = 0; i < matrix.length; i += 1) {
-
-		int currentCountOfPoints = 0;
-		clearMatrix();
-		List<Edge> currentEdgesList = new ArrayList<>();
-		List<ValuesContainer> wishes;
-
-		Edge nextEdge;
-
-		float length = 0f;
-		// int curHeight = i;
-		int curHeight = startHeight;
-		clearMatrix();
-
-		while (currentCountOfPoints < maxPathLength) {
-
-			nextEdge = matrix[curHeight][0];
-			nextEdge.visited[threadIndex] = 1;
-			currentEdgesList.add(nextEdge);
-
-			wishes = calculateSumOfAllWishesAndRelativeWishes(curHeight);
-
-			nextEdge = getNextEdgeToPath(wishes);
-
-			if (curHeight == nextEdge.heightIndex) {
-				curHeight = nextEdge.widthIndex;
-			} else {
-				curHeight = nextEdge.heightIndex;
-			}
-			length += nextEdge.distanceBetweenPoints;
-			currentCountOfPoints++;
-		}
-		// edgesContainer.put(length, currentEdgesList);
-
-		// }
-		// updateMaxrixWeight(edgesContainer);
-		// float min = edgesContainer.keySet().stream().min((o1, o2) -> Float.compare(o1,
-		// o2)).get().floatValue();
-		// if (min <= minLength) {
-		// ans = edgesContainer.get(min).stream().map(e -> pointsContainer.get(e.heightIndex))
-		// .collect(Collectors.toList());
-		// minLength = min;
-		// }
-		// System.out.println(
-		// "current iteration: " + iter + ", current min length: " + min + ", the minnest length: " +
-		// minLength);
-		// iter++;
-		// }
 		/*
+		 * int maxPathLength = matrix[0].length - 1;
+		 * int iter = 0;
+		 * List<Points> ans = null;
+		 * float minLength = Float.MAX_VALUE;
+		 * // while (iter < 1000) {
+		 * // for (int i = 0; i < matrix.length; i += 1) {
+		 * 
+		 * int currentCountOfPoints = 0;
+		 * clearMatrix();
+		 * List<Edge> currentEdgesList = new ArrayList<>();
+		 * List<ValuesContainer> wishes;
+		 * 
+		 * Edge nextEdge;
+		 * 
+		 * float length = 0f;
+		 * // int curHeight = i;
+		 * int curHeight = startHeight;
+		 * clearMatrix();
+		 * 
+		 * while (currentCountOfPoints < maxPathLength) {
+		 * 
+		 * nextEdge = matrix[curHeight][0];
+		 * nextEdge.visited[threadIndex] = 1;
+		 * currentEdgesList.add(nextEdge);
+		 * 
+		 * wishes = calculateSumOfAllWishesAndRelativeWishes(curHeight);
+		 * 
+		 * nextEdge = getNextEdgeToPath(wishes);
+		 * 
+		 * if (curHeight == nextEdge.heightIndex) {
+		 * curHeight = nextEdge.widthIndex;
+		 * } else {
+		 * curHeight = nextEdge.heightIndex;
+		 * }
+		 * length += nextEdge.distanceBetweenPoints;
+		 * currentCountOfPoints++;
+		 * }
+		 * // edgesContainer.put(length, currentEdgesList);
+		 * 
+		 * // }
+		 * // updateMaxrixWeight(edgesContainer);
+		 * // float min = edgesContainer.keySet().stream().min((o1, o2) -> Float.compare(o1,
+		 * // o2)).get().floatValue();
+		 * // if (min <= minLength) {
+		 * // ans = edgesContainer.get(min).stream().map(e -> pointsContainer.get(e.heightIndex))
+		 * // .collect(Collectors.toList());
+		 * // minLength = min;
+		 * // }
+		 * // System.out.println(
+		 * // "current iteration: " + iter + ", current min length: " + min + ", the minnest length: " +
+		 * // minLength);
+		 * // iter++;
+		 * // }
+		 * /*
 		 * for (int i = 0; i < matrix.length; i++) {
 		 * for (int j = 0; j < matrix[i].length; j++) {
 		 * System.out.print(matrix[i][j].rangeFromFirstToThis+"\s");
@@ -159,7 +162,8 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 		 * System.out.println();
 		 * }
 		 *
-		return new Object[] { length, currentEdgesList };*/
+		 * return new Object[] { length, currentEdgesList };
+		 */
 	}
 
 	// Очистка матрицы
@@ -230,6 +234,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 		return null;
 	}
 
+	@SuppressWarnings("unused")
 	private void updateMaxrixWeight(Map<Float, List<Edge>> container) {
 		for (int i = 0; i < matrix.length; i++) {
 			for (int j = 1; j < matrix[i].length; j++) {

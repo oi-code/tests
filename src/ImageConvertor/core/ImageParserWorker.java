@@ -29,6 +29,7 @@ public class ImageParserWorker {
 		this.queue = queue;
 	}
 
+	@SuppressWarnings("unused")
 	public List<List<Points>> doTask() {
 		queue.offer(controller.getLocaleText("processing"));
 		Runtime.getRuntime().gc();

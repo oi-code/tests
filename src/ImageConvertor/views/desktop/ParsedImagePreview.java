@@ -49,6 +49,7 @@ public class ParsedImagePreview extends JPanel
 	JFrame layersBox;
 	List<JCheckBox> boxes;
 	ThreadLocalRandom tlr = ThreadLocalRandom.current();
+	JButton but;
 	int width;
 	int height;
 	int count = 1;
@@ -80,6 +81,18 @@ public class ParsedImagePreview extends JPanel
 			layersBox.setVisible(false);
 			mainPanel.setVisible(false);
 			return;
+		}
+
+		if (controller.isProcessWindowShowed()) {
+			for (JCheckBox box : boxes) {
+				box.setEnabled(false);
+			}
+			but.setEnabled(false);
+		} else {
+			for (JCheckBox box : boxes) {
+				box.setEnabled(true);
+			}
+			but.setEnabled(true);
 		}
 		setOpaque(false);
 		layerCount = -1;
@@ -202,7 +215,6 @@ public class ParsedImagePreview extends JPanel
 
 			setLocation(X, Y);
 		} catch (NullPointerException exc) {
-			// TODO: handle exception
 		}
 		// repaint();
 	}
@@ -279,7 +291,7 @@ public class ParsedImagePreview extends JPanel
 
 	private JButton getButtonForLayers() {
 		JButton button = new JButton(controller.getLocaleText("select_all"));
-		button.setPreferredSize(new Dimension(layersBox.getWidth(), (int)(layersBox.getHeight()*0.1f)));
+		button.setPreferredSize(new Dimension(layersBox.getWidth(), (int) (layersBox.getHeight() * 0.1f)));
 		button.setFocusable(false);
 		button.addActionListener(e -> {
 			if (button.getText().equals(controller.getLocaleText("select_all"))) {
@@ -294,6 +306,7 @@ public class ParsedImagePreview extends JPanel
 				}
 			}
 		});
+		but=button;
 		return button;
 	}
 

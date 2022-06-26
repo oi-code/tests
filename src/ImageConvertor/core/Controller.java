@@ -2,11 +2,15 @@ package ImageConvertor.core;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -16,13 +20,14 @@ import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.swing.ImageIcon;
-import javax.swing.SwingUtilities;
 
 import ImageConvertor.data.State;
+import ImageConvertor.Main;
 import ImageConvertor.data.Points;
 import ImageConvertor.views.desktop.GCodeCreatorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
+import ImageConvertor.views.desktop.View;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
@@ -42,8 +47,10 @@ public class Controller {
 	private void getLocale() {
 		Properties prop = new Properties();
 		String defLoc = Locale.getDefault().toString();
-		try {
-			InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
+		try {			
+			//InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
+			//InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
+			InputStream is=State.class.getResourceAsStream("locale/"+defLoc+".properties");
 			InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
 			prop.load(isr);
 			STATE.setLocale(prop);

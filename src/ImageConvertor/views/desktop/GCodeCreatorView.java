@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -128,13 +129,15 @@ public class GCodeCreatorView extends JDialog {
 				}
 			}
 			settings=temp;
-			System.out.println(settings);
-			dispose();
+			//System.out.println(settings);
+			//dispose();
+			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 		});
 
 		JButton cancelButton = new JButton(controller.getLocaleText("cancel"));
 		cancelButton.addActionListener(e -> {
-			dispose();
+			//dispose();
+			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 		});
 
 		container.add(okButton);

@@ -1,21 +1,13 @@
 package ImageConvertor;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.prefs.Preferences;
-
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.UIManager;
 
-import ImageConvertor.views.desktop.AlgorithmSettingsView;
 import ImageConvertor.views.desktop.View;
 
 //import com.formdev.flatlaf.FlatDarkLaf;
 
 public class Main {
-	public static void main(String... args) throws Exception {
+	public static void main(String... args) throws Throwable {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			// UIManager.setLookAndFeel(new FlatDarkLaf());
@@ -23,10 +15,9 @@ public class Main {
 		}
 		try {
 			View.getInstance();
-			//new AlgorithmSettingsView();			
 		} catch (Throwable e) {
 			e.printStackTrace();
-			//System.exit(0);
+			System.exit(0);
 		}
 	}
 }

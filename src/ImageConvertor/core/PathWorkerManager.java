@@ -59,7 +59,7 @@ public class PathWorkerManager {
 		this.iterationsCount = iterationsCount;
 		this.initalPathDivider = initalPathDivider;
 		this.vaporizeDivider = vaporizeDivider;
-		this.queue=queue;
+		this.queue = queue;
 	}
 
 	private PathWorkerManager(Controller c) {
@@ -74,17 +74,18 @@ public class PathWorkerManager {
 			boundHeight += chunkSize;
 		}
 		pointsList = controller.getForDrawContainer();
-		clearIsLockedFlagInAllPoints();
+		//clearIsLockedFlagInAllPoints();
 	}
 
 	private void reloadPointsContainer() {
 		pathContainer.clear();
-		if(pointsList.size()>0) {
-		for (int i = 0; i < pointsList.size(); i++) {
-			pathContainer.add(getMatrix(i));
+		if (pointsList.size() > 0) {
+			for (int i = 0; i < pointsList.size(); i++) {
+				pathContainer.add(getMatrix(i));
+			}
+			fillPathMatrix();
+			controller.setChunks(searchMatrix[0].length);
 		}
-		fillPathMatrix();
-		controller.setChunks(searchMatrix[0].length);}
 	}
 
 	private Points[][] getMatrix(int nextList) {
@@ -152,13 +153,13 @@ public class PathWorkerManager {
 					List<Edge> edges = e.getValue();
 					updateMaxrixWeight(length_, edges, ajMatrix);
 				});
-				float min = (float) paths.keySet().stream().mapToDouble(e -> e).min().getAsDouble();
+				float min = (float) paths.keySet().stream().mapToDouble(e -> e).min().orElse(Float.MAX_VALUE);
 				if (min < lgth) {
 					lgth = min;
 					currentIterationBestPath = paths.get(min).stream().map(e -> tmp.get(e.heightIndex)).toList();
 				}
 				paths.clear();
-				counter.set(workers.size());
+				//counter.set(workers.size());
 				iterations++;
 				for (PathWorker w : workers) {
 					w.isWorkDone = false;
@@ -491,6 +492,7 @@ public class PathWorkerManager {
 		isCanceled = true;
 	}
 
+	@SuppressWarnings("unused")
 	private void clearIsLockedFlagInAllPoints() {
 		for (int i = 0; i < pointsList.size(); i++) {
 			for (Points p : pointsList.get(i)) {

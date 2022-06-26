@@ -38,7 +38,7 @@ public class PathsImagePreview extends JPanel
 	JFrame mainPanel;
 	JScrollPane jsp;
 	Point p;
-	JFrame layersBox;
+	JFrame pathsBox;
 	List<JCheckBox> boxes;
 	ThreadLocalRandom tlr = ThreadLocalRandom.current();
 	int width;
@@ -61,6 +61,7 @@ public class PathsImagePreview extends JPanel
 		getLayersBoxFrame();
 	}
 
+	@SuppressWarnings("unused")
 	private void sortPoints() {
 
 	}
@@ -69,7 +70,7 @@ public class PathsImagePreview extends JPanel
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		if (forDrawContainer == null) {
-			layersBox.setVisible(false);
+			pathsBox.setVisible(false);
 			mainPanel.setVisible(false);
 			return;
 		}
@@ -114,7 +115,7 @@ public class PathsImagePreview extends JPanel
 
 		if (controller.isCanceled()) {
 			mainPanel.setVisible(false);
-			layersBox.setVisible(false);
+			pathsBox.setVisible(false);
 		}
 	}
 
@@ -187,8 +188,8 @@ public class PathsImagePreview extends JPanel
 
 	@Override
 	public void windowClosing(WindowEvent e) {
-		layersBox.dispose();
-		layersBox = null;
+		pathsBox.dispose();
+		pathsBox = null;
 	}
 
 	@Override
@@ -210,11 +211,10 @@ public class PathsImagePreview extends JPanel
 	@Override
 	public void windowDeactivated(WindowEvent e) {
 	}
-	
 
 	private JButton getButtonForLayers() {
 		JButton button = new JButton(controller.getLocaleText("select_all"));
-		button.setPreferredSize(new Dimension(layersBox.getWidth(), (int)(layersBox.getHeight()*0.1f)));
+		button.setPreferredSize(new Dimension(pathsBox.getWidth(), (int) (pathsBox.getHeight() * 0.1f)));
 		button.setFocusable(false);
 		button.addActionListener(e -> {
 			if (button.getText().equals(controller.getLocaleText("select_all"))) {
@@ -234,18 +234,21 @@ public class PathsImagePreview extends JPanel
 
 	private JFrame getLayersBoxFrame() {
 
-		layersBox = new JFrame(controller.getLocaleText("layer_csr"));
-		layersBox.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		layersBox.setLocation(mainPanel.getLocation().x - 240, mainPanel.getLocation().y);
-		layersBox.setLayout(new BorderLayout());
-		layersBox.setSize(250, 300);// (forDraw.size()+1)*40);
-		layersBox.setLocation(mainPanel.getLocation().x - 240, mainPanel.getLocation().y + 333);
+		if (forDrawContainer == null) {
+			return null;
+		}
+		pathsBox = new JFrame(controller.getLocaleText("path_csr"));
+		pathsBox.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		pathsBox.setLocation(mainPanel.getLocation().x - 240, mainPanel.getLocation().y);
+		pathsBox.setLayout(new BorderLayout());
+		pathsBox.setSize(250, 300);// (forDraw.size()+1)*40);
+		pathsBox.setLocation(mainPanel.getLocation().x - 240, mainPanel.getLocation().y + 333);
 
 		JPanel topPanel = new JPanel();
 		topPanel.setLayout(new GridLayout(10, 3));
 		boxes = new ArrayList<JCheckBox>();
 		for (int i = 0; i < forDrawContainer.size(); i++) {
-			JCheckBox temp = new JCheckBox(controller.getLocaleText("layer") + ": " + (i + 1));
+			JCheckBox temp = new JCheckBox(controller.getLocaleText("path") + ": " + (i + 1));
 			temp.setFocusable(false);
 			boxes.add(temp);
 			topPanel.add(temp);
@@ -253,16 +256,16 @@ public class PathsImagePreview extends JPanel
 		int select = boxes.size() / 4;
 		boxes.get(select).setSelected(true);
 		if (!controller.isCanceled()) {
-			layersBox.setVisible(true);
+			pathsBox.setVisible(true);
 			mainPanel.setVisible(true);
 		}
 
 		JPanel buttonContainer = new JPanel();
 		buttonContainer.add(getButtonForLayers());
 
-		layersBox.add(topPanel, BorderLayout.CENTER);
-		layersBox.add(buttonContainer, BorderLayout.SOUTH);
+		pathsBox.add(topPanel, BorderLayout.CENTER);
+		pathsBox.add(buttonContainer, BorderLayout.SOUTH);
 
-		return layersBox;
+		return pathsBox;
 	}
 }

@@ -39,8 +39,17 @@ public class GCodeCreator {
 		 */
 		path = controller.getFinalList();
 		sb = new StringBuilder();
-		width = controller.getImageWidth();
-		height = controller.getImageHeight();
+		int boundHeight = 0;
+		int boundWidth = 0;
+		int chunkSize = controller.getChunkSize();
+		while (boundWidth < controller.getImageWidth()) {
+			boundWidth += chunkSize;
+		}
+		while (boundHeight < controller.getImageHeight()) {
+			boundHeight += chunkSize;
+		}
+		width = boundWidth;
+		height = boundHeight;
 
 		up = settings.get(0);
 		down = settings.get(1);
@@ -61,8 +70,7 @@ public class GCodeCreator {
 		float scaleHeight = a4Sheet[0] / imageRealWidth;
 		float scaleWidth = a4Sheet[1] / imageRealHeight;
 
-		
-		float scaler = Math.min(scaleHeight, scaleWidth);		
+		float scaler = Math.min(scaleHeight, scaleWidth) * scale;
 
 		int chunkSize = controller.getChunkSize();
 		int maxConnectedRange = 10;
