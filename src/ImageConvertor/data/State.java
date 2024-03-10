@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.swing.ImageIcon;
 
@@ -19,10 +20,10 @@ public class State {
 	private ImageIcon imageIcon;
 	private String fileName;
 	private String figure;
-	private List<List<Points>> allLayersContainer;
-	private List<List<Points>> forDrawContainer = new ArrayList<>();
-	private List<List<Point>> chosedLayers = new ArrayList<>();
-	private List<List<Point>> pathPointsList;
+	private List<List<Chunk>> allLayers;
+	private List<List<Chunk>> chosedLayersForDraw = new ArrayList<>();
+	private List<List<Chunk>> chosedLayers = new ArrayList<>();
+	private List<List<Chunk>> pathPointsList;
 	private Properties locale;
 	private boolean isLoaded;
 	private boolean useRandom;
@@ -134,27 +135,27 @@ public class State {
 		this.figure = figure;
 	}
 
-	public List<List<Points>> getForDrawContainer() {
-		return forDrawContainer;
+	public List<List<Chunk>> getChosedLayersForDraw() {
+		return chosedLayersForDraw;
 	}
 
-	public void setForDrawContainer(List<List<Points>> forDrawContainer) {
-		this.forDrawContainer = forDrawContainer;
+	public void setForDrawContainer(List<List<Chunk>> chosedLayersForDrawContainer) {
+		this.chosedLayersForDraw = chosedLayersForDrawContainer;
 	}
 
-	public List<List<Points>> getAllLayersContainer() {
-		return allLayersContainer;
+	public List<List<Chunk>> getAllLayers() {
+		return allLayers;
 	}
 
-	public void setAllLayersContainer(List<List<Points>> allLayersContainer) {
-		this.allLayersContainer = allLayersContainer;
+	public void setAllLayers(List<List<Chunk>> allLayersContainer) {
+		this.allLayers = allLayersContainer;
 	}
 
-	public List<List<Point>> getChosedLayers() {
+	public List<List<Chunk>> getChosedLayers() {
 		return chosedLayers;
 	}
 
-	public void setChosedLayers(List<List<Point>> finalList) {
+	public void setChosedLayers(List<List<Chunk>> finalList) {
 		this.chosedLayers = finalList;
 	}
 
@@ -166,11 +167,11 @@ public class State {
 		this.isLoaded = isLoaded;
 	}
 
-	public List<List<Point>> getPathsPointList() {
+	public List<List<Chunk>> getPathsPointList() {
 		return pathPointsList;
 	}
 
-	public void setPathsPointList(List<List<Point>> finalList) {
+	public void setPathsPointList(List<List<Chunk>> finalList) {
 		pathPointsList = finalList;
 	}
 

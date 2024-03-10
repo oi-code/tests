@@ -7,9 +7,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
 
-public class GCodeCreator {
+public class GCodeGenerator {
 	private float pixelSize = 0.207f;
 	private short[] a4Sheet = new short[] { 210, 297 };
 	private String up = "M5 S0";
@@ -17,13 +18,13 @@ public class GCodeCreator {
 	private String delayString = "G4 P0.1";
 
 	Controller controller;
-	private List<List<Point>> path;
+	private List<List<Chunk>> path;
 	private StringBuilder sb;
 	private int width;
 	private int height;
 	private float scale;
 
-	public GCodeCreator(Controller controller, List<String> settings) {
+	public GCodeGenerator(Controller controller, List<String> settings) {
 		super();
 		this.controller = controller;
 		path = new ArrayList<>();
@@ -82,23 +83,23 @@ public class GCodeCreator {
 		sb.append("G90\n");
 		sb.append(servoUpCutPath);
 		boolean isUp = false;
-		for (List<Point> list : path) {
+		for (List<Chunk> list : path) {
 			sb.append(servoUpCutPath);
 			isUp = true;
-			Point prev = list.get(0);
-			sb.append(String.format(pathTemplate, prev.getX() * pixelSize * scaler, prev.getY() * pixelSize * scaler));
+			Chunk prev = list.get(0);
+			sb.append(String.format(pathTemplate, prev.startPoint.getX() * pixelSize * scaler, prev.startPoint.getY() * pixelSize * scaler));
 			sb.append(servoDownCutPath);
-			for (Point cur : list) {
+			for (Chunk cur : list) {
 				if (isUp) {
 					sb.append(servoDownCutPath);
 					isUp = false;
 				}
-				if (prev.distance(cur) > maxCalcRange && !isUp) {
+				if (prev.startPoint.distance(cur.startPoint) > maxCalcRange && !isUp) {
 					sb.append(servoUpCutPath);
 					isUp = true;
 				}
-				double curX = cur.getX() * pixelSize;
-				double curY = cur.getY() * pixelSize;
+				double curX = cur.startPoint.getX() * pixelSize;
+				double curY = cur.startPoint.getY() * pixelSize;
 				sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 				prev = cur;
 			}

@@ -26,13 +26,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import ImageConvertor.core.Controller;
+import ImageConvertor.data.Chunk;
 
 @SuppressWarnings(value = "serial")
 public class PathsImagePreview extends JPanel
 		implements MouseMotionListener, MouseListener, MouseWheelListener, WindowListener {
 
 	Controller controller;
-	List<List<Point>> forDrawContainer;
+	List<List<Chunk>> forDrawContainer;
 	Short s;
 	String figure;
 	JFrame mainPanel;
@@ -84,20 +85,20 @@ public class PathsImagePreview extends JPanel
 		g2.setColor(Color.GRAY);
 		g2.setStroke(new BasicStroke(controller.getStroke()));
 		controller.getFinalList().clear();
-		for (List<Point> list : forDrawContainer) {
+		for (List<Chunk> list : forDrawContainer) {
 			layerCount++;
 			repaint();
 			if (!boxes.get(layerCount).isSelected())
 				continue;
 			controller.getFinalList().add(list);
-			Point prev = list.get(0);
-			for (Point cur : list) {
-				int prevX = prev.x / count;
-				int prevY = prev.y / count;
-				int curX = cur.x / count;
-				int curY = cur.y / count;
-				// if (prev.distance(cur) < 20)
-				g2.drawLine(prevX, prevY, curX, curY);
+			Chunk prev = list.get(0);
+			for (Chunk cur : list) {
+				int prevX = prev.endPoint.x / count;
+				int prevY = prev.endPoint.y / count;
+				int curX = cur.startPoint.x / count;
+				int curY = cur.startPoint.y / count;
+				//if (prev.chunkPosition.distance(cur.chunkPosition) < controller.getChunkSize()/4)
+					g2.drawLine(prevX, prevY, curX, curY);
 				prev = cur;
 			}
 		}

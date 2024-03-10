@@ -1,5 +1,7 @@
 package ImageConvertor.data;
 
+import java.util.List;
+
 import ImageConvertor.core.Controller;
 
 public class Edge implements Cloneable {
@@ -8,6 +10,10 @@ public class Edge implements Cloneable {
 	public int heightIndex = -1;
 	public int widthIndex = -1;
 	public byte[] visited = new byte[Controller.N_THREADS];
+	public Chunk from;
+	public Chunk to;
+	public double distance;
+	public List<Chunk> reachableChunks;
 
 	private Edge() {
 	}
@@ -16,6 +22,7 @@ public class Edge implements Cloneable {
 		this.heightIndex = heightIndex;
 		this.widthIndex = widthIndex;
 		this.distanceBetweenPoints = distanceBetweenPoints;
+		distance = from.chunkPosition.distance(to.chunkPosition);
 	}
 
 	@Override

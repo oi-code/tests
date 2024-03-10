@@ -8,13 +8,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import ImageConvertor.data.Edge;
-import ImageConvertor.data.Points;
+import ImageConvertor.data.Chunk;
 import ImageConvertor.data.ValuesContainer;
 
 public class PathWorker extends Thread implements Callable<Object[]> {
 
 	Edge[][] matrix;
-	List<Points> pointsContainer;
+	List<Chunk> pointsContainer;
 	AtomicInteger counter;
 	Map<Float, List<Edge>> paths;
 	Controller controller;
@@ -27,7 +27,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 	final int threadIndex;
 	public boolean isWorkDone = false;
 
-	public PathWorker(Edge[][] matrix, List<Points> pointsContainer, Controller c, float rangeRate, float weightRate,
+	public PathWorker(Edge[][] matrix, List<Chunk> pointsContainer, Controller c, float rangeRate, float weightRate,
 			int startHeight, int threadIndex, AtomicInteger counter, Map<Float, List<Edge>> paths) {
 		this.matrix = matrix;
 		this.controller = c;
@@ -100,70 +100,6 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 	@Override
 	public Object[] call() throws Exception {
 		throw new UnsupportedOperationException("NOT DEVELOPED");
-		/*
-		 * int maxPathLength = matrix[0].length - 1;
-		 * int iter = 0;
-		 * List<Points> ans = null;
-		 * float minLength = Float.MAX_VALUE;
-		 * // while (iter < 1000) {
-		 * // for (int i = 0; i < matrix.length; i += 1) {
-		 * 
-		 * int currentCountOfPoints = 0;
-		 * clearMatrix();
-		 * List<Edge> currentEdgesList = new ArrayList<>();
-		 * List<ValuesContainer> wishes;
-		 * 
-		 * Edge nextEdge;
-		 * 
-		 * float length = 0f;
-		 * // int curHeight = i;
-		 * int curHeight = startHeight;
-		 * clearMatrix();
-		 * 
-		 * while (currentCountOfPoints < maxPathLength) {
-		 * 
-		 * nextEdge = matrix[curHeight][0];
-		 * nextEdge.visited[threadIndex] = 1;
-		 * currentEdgesList.add(nextEdge);
-		 * 
-		 * wishes = calculateSumOfAllWishesAndRelativeWishes(curHeight);
-		 * 
-		 * nextEdge = getNextEdgeToPath(wishes);
-		 * 
-		 * if (curHeight == nextEdge.heightIndex) {
-		 * curHeight = nextEdge.widthIndex;
-		 * } else {
-		 * curHeight = nextEdge.heightIndex;
-		 * }
-		 * length += nextEdge.distanceBetweenPoints;
-		 * currentCountOfPoints++;
-		 * }
-		 * // edgesContainer.put(length, currentEdgesList);
-		 * 
-		 * // }
-		 * // updateMaxrixWeight(edgesContainer);
-		 * // float min = edgesContainer.keySet().stream().min((o1, o2) -> Float.compare(o1,
-		 * // o2)).get().floatValue();
-		 * // if (min <= minLength) {
-		 * // ans = edgesContainer.get(min).stream().map(e -> pointsContainer.get(e.heightIndex))
-		 * // .collect(Collectors.toList());
-		 * // minLength = min;
-		 * // }
-		 * // System.out.println(
-		 * // "current iteration: " + iter + ", current min length: " + min + ", the minnest length: " +
-		 * // minLength);
-		 * // iter++;
-		 * // }
-		 * /*
-		 * for (int i = 0; i < matrix.length; i++) {
-		 * for (int j = 0; j < matrix[i].length; j++) {
-		 * System.out.print(matrix[i][j].rangeFromFirstToThis+"\s");
-		 * }
-		 * System.out.println();
-		 * }
-		 *
-		 * return new Object[] { length, currentEdgesList };
-		 */
 	}
 
 	// Очистка матрицы
@@ -192,9 +128,9 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 				continue;
 			temp = new ValuesContainer();
 			temp.edge = cur;
-			temp.currentWishToGoHere = (float) (Math.pow(cur.distanceBetweenPoints, rangeRate)
+			temp.currentWishToGoThere = (float) (Math.pow(cur.distanceBetweenPoints, rangeRate)
 					+ Math.pow(cur.weight, weightRate));
-			ans += temp.currentWishToGoHere;
+			ans += temp.currentWishToGoThere;
 			cur.visited[threadIndex] = 1;
 			curWishList.add(temp);
 		}
@@ -205,14 +141,14 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 				continue;
 			temp = new ValuesContainer();
 			temp.edge = cur;
-			temp.currentWishToGoHere = (float) (Math.pow(cur.distanceBetweenPoints, rangeRate)
+			temp.currentWishToGoThere = (float) (Math.pow(cur.distanceBetweenPoints, rangeRate)
 					+ Math.pow(cur.weight, weightRate));
-			ans += temp.currentWishToGoHere;
+			ans += temp.currentWishToGoThere;
 			cur.visited[threadIndex] = 1;
 			curWishList.add(temp);
 		}
 		for (ValuesContainer a : curWishList) {
-			a.currentChanceToGoHere = a.currentWishToGoHere / ans;
+			a.currentChanceToGoThere = a.currentWishToGoThere / ans;
 		}
 		return curWishList;
 	}
@@ -223,7 +159,7 @@ public class PathWorker extends Thread implements Callable<Object[]> {
 		ValuesContainer curValue;
 		for (int i = 0; i < chancesContainer.size(); i++) {
 			curValue = chancesContainer.get(i);
-			sum += curValue.currentChanceToGoHere;
+			sum += curValue.currentChanceToGoThere;
 			if (sum >= currentChance) {
 				return curValue.edge;
 			}

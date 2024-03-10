@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import ImageConvertor.data.Direction;
-import ImageConvertor.data.Points;
+import ImageConvertor.data.Chunk;
 
 class SingleThreadParseImage {
 
 	protected BufferedImage img;
-	protected short width;
-	protected short height;
-	protected short chunkSize;
+	protected short imageWidth;
+	protected short imageHeight;
+	protected short chunkResolution;
 	protected float minLum, maxLum;
 	protected int layer;
 	protected Controller c;
@@ -21,10 +21,9 @@ class SingleThreadParseImage {
 	public SingleThreadParseImage(Controller c) {
 		this.c = c;
 		this.img = c.getBufferedImage();
-		// this.sb = new StringBuilder();
-		this.width = (short) img.getWidth();
-		this.height = (short) img.getHeight();
-		this.chunkSize = c.getChunkSize();
+		this.chunkResolution = c.getChunkSize();
+		this.imageWidth = (short) (img.getWidth() - (img.getWidth() % chunkResolution));
+		this.imageHeight = (short) (img.getHeight() - (img.getHeight() % chunkResolution));
 		// this.maxLum = c.getMaxLum();
 		// this.minLum = c.getMinLum();
 		// sb.append("width: " + width + " height: " + height + "\n");
@@ -38,7 +37,12 @@ class SingleThreadParseImage {
 		this.maxLum = maxLum;
 	}
 
-	protected Points searchMaxLine(short w, short h, Direction direction, Points points, short startW, short startH) {
+	public void setLayer(int layer) {
+		this.layer = layer;
+	}
+
+	private Chunk searchMaxLineInChunk(short w, short h, Direction direction, Chunk points, short startW,
+			short startH) {
 		// short[] arr = getDirection(w, h, direction);
 		if (isBlackPixel(w, h)) {
 			// points.startH = h;
@@ -59,7 +63,7 @@ class SingleThreadParseImage {
 				points.endPoint.x = w;
 				points.endPoint.y = h;
 				// arr = getDirection(w, h, direction);
-				if (w < startW || w > startW - 1 + chunkSize || h < startH || h > startH - 1 + chunkSize) {
+				if (w < startW || w > startW - 1 + chunkResolution || h < startH || h > startH - 1 + chunkResolution) {
 					break;
 				}
 			}
@@ -68,46 +72,83 @@ class SingleThreadParseImage {
 		return points;
 	}
 
-	protected List<Points> search() {
+	private List<Chunk> search() {
 
-		List<Points> maxPoints = new ArrayList<Points>();
+		List<Chunk> maxPoints = new ArrayList<Chunk>();
 		int index = 0;
-		for (short h = 0; h < height; h += chunkSize) {
-			short cHeight = (short) (h / chunkSize);
-			for (short w = 0; w < width; w += chunkSize) {
-				short cWidth = (short) (w / chunkSize);
-				List<Points> pList = new ArrayList<Points>();
 
-				for (short h1 = h; h1 < (h + chunkSize); h1++) {
-					for (short w1 = w; w1 < (w + chunkSize); w1++) {
+		// outer loop through the whole image
+		for (short inLoopImageHeight = 0; inLoopImageHeight < imageHeight; inLoopImageHeight += chunkResolution) {
 
-						if (c.isCanceled())
-							return null;
-						Points p1 = new Points(cHeight, cWidth);
-						Points p2 = new Points(cHeight, cWidth);
-						Points p3 = new Points(cHeight, cWidth);
-						Points p4 = new Points(cHeight, cWidth);
+			short chunkHeightPosition = (short) (inLoopImageHeight / chunkResolution);
 
-						p1.index = index;
-						p2.index = index;
-						p3.index = index;
-						p4.index = index;
+			for (short inLoopImageWidth = 0; inLoopImageWidth < imageWidth; inLoopImageWidth += chunkResolution) {
 
-						p1.layer = minLum;
-						p2.layer = minLum;
-						p3.layer = minLum;
-						p4.layer = minLum;
+				short cunkWidthPosition = (short) (inLoopImageWidth / chunkResolution);
 
-						pList.add(searchMaxLine(w1, h1, Direction.RIGHT, p1, w, h));
-						pList.add(searchMaxLine(w1, h1, Direction.DOWN, p2, w, h));
-						pList.add(searchMaxLine(w1, h1, Direction.RIGHT_DOWN, p3, w, h));
-						pList.add(searchMaxLine(w1, h1, Direction.RIGHT_UP, p4, w, h));
-					}
+				List<Chunk> pList = new ArrayList<Chunk>();
 
-				}
+				float currentLumiance = 0;
+
+				Chunk chunk_1 = new Chunk(chunkHeightPosition, cunkWidthPosition);
+				Chunk chunk_2 = new Chunk(chunkHeightPosition, cunkWidthPosition);
+				Chunk chunk_3 = new Chunk(chunkHeightPosition, cunkWidthPosition);
+				Chunk chunk_4 = new Chunk(chunkHeightPosition, cunkWidthPosition);
+
+				chunk_1.index = index;
+				chunk_2.index = index;
+				chunk_3.index = index;
+				chunk_4.index = index;
+
 				index++;
+				// inner loop through one chunk
+				for (short chunkHeight = inLoopImageHeight; chunkHeight < (inLoopImageHeight
+						+ chunkResolution); chunkHeight++) {
+					for (short chunkWidth = inLoopImageWidth; chunkWidth < (inLoopImageWidth
+							+ chunkResolution); chunkWidth++) {
+						if (c.isCanceled()) {
+							return null;
+						}
 
-				Points max = pList.stream().max((i1, i2) -> Double.compare(i1.getLength(), i2.getLength())).get();
+						try {
+							int color = img.getRGB(chunkWidth, chunkHeight);
+							int red = (color >>> 16) & 0xff;
+							int green = (color >>> 8) & 0xff;
+							int blue = color & 0xff;
+							currentLumiance += ((red * 0.2126f) + (green * 0.7152f) + (blue * 0.0722f)) / 255;
+						} catch (ArrayIndexOutOfBoundsException e) {
+							System.out.println(this.getClass().getName() + " - " + e.getStackTrace()[2].getLineNumber()
+									+ " - " + chunkWidth + " - " + chunkHeight + " - " + currentLumiance);
+						}
+
+						/*
+						 * chunk_1.layer = minLum;
+						 * chunk_2.layer = minLum;
+						 * chunk_3.layer = minLum;
+						 * chunk_4.layer = minLum;
+						 */
+
+						pList.add(searchMaxLineInChunk(chunkWidth, chunkHeight, Direction.RIGHT, chunk_1,
+								inLoopImageWidth, inLoopImageHeight));
+						pList.add(searchMaxLineInChunk(chunkWidth, chunkHeight, Direction.DOWN, chunk_2,
+								inLoopImageWidth, inLoopImageHeight));
+						pList.add(searchMaxLineInChunk(chunkWidth, chunkHeight, Direction.RIGHT_DOWN, chunk_3,
+								inLoopImageWidth, inLoopImageHeight));
+						pList.add(searchMaxLineInChunk(chunkWidth, chunkHeight, Direction.RIGHT_UP, chunk_4,
+								inLoopImageWidth, inLoopImageHeight));
+					}
+				}
+				chunk_1.chunkTotalLuminiance = currentLumiance;
+				chunk_2.chunkTotalLuminiance = currentLumiance;
+				chunk_3.chunkTotalLuminiance = currentLumiance;
+				chunk_4.chunkTotalLuminiance = currentLumiance;
+
+				chunk_1.layer = layer;
+				chunk_2.layer = layer;
+				chunk_3.layer = layer;
+				chunk_4.layer = layer;
+				
+				Chunk max = pList.stream().max((i1, i2) -> Double.compare(i1.getLength(), i2.getLength())).get();
 
 				if (max.getLength() == 0) {
 					max.direction = Direction.STUB;
@@ -126,11 +167,13 @@ class SingleThreadParseImage {
 					 * chunkSize);
 					 */
 					ThreadLocalRandom tlr = ThreadLocalRandom.current();
-					max.startPoint.x = tlr.nextInt(max.startPoint.x - chunkSize, max.startPoint.x + chunkSize);
-					max.startPoint.y = tlr.nextInt(max.startPoint.y - chunkSize, max.startPoint.y + chunkSize);
+					max.startPoint.x = tlr.nextInt(max.startPoint.x - chunkResolution,
+							max.startPoint.x + chunkResolution);
+					max.startPoint.y = tlr.nextInt(max.startPoint.y - chunkResolution,
+							max.startPoint.y + chunkResolution);
 
-					max.endPoint.x = tlr.nextInt(max.endPoint.x - chunkSize, max.endPoint.x + chunkSize);
-					max.endPoint.y = tlr.nextInt(max.endPoint.y - chunkSize, max.endPoint.y + chunkSize);
+					max.endPoint.x = tlr.nextInt(max.endPoint.x - chunkResolution, max.endPoint.x + chunkResolution);
+					max.endPoint.y = tlr.nextInt(max.endPoint.y - chunkResolution, max.endPoint.y + chunkResolution);
 				}
 				// if (max.direction != Direction.STUB) {
 				// System.out.println(max);
@@ -141,24 +184,42 @@ class SingleThreadParseImage {
 		}
 		// System.out.println("end");
 		// System.out.println("SngleThread line 70. Size: " + maxPoints.size());
+		/*
+		 * maxPoints.stream().forEach(e -> {
+		 * float currentLumiance = 0;
+		 * for (int i = e.absolutePositionInImagePoint.x; i < e.absolutePositionInImagePoint.x
+		 * + chunkResolution; i++) {
+		 * for (int j = e.absolutePositionInImagePoint.y; j < e.absolutePositionInImagePoint.y
+		 * + chunkResolution; j++) {
+		 * int color = img.getRGB(i, j);
+		 * int red = (color >>> 16) & 0xff;
+		 * int green = (color >>> 8) & 0xff;
+		 * int blue = color & 0xff;
+		 * float luminance = ((red * 0.2126f) + (green * 0.7152f) + (blue * 0.0722f)) / 255;
+		 * currentLumiance += luminance;
+		 * }
+		 * }
+		 * e.totalLuminiance = currentLumiance / (chunkResolution * chunkResolution);
+		 * });
+		 */
 		maxPoints.sort((o1, o2) -> Integer.compare(o1.index, o2.index));
 		return maxPoints;
 	}
 
 	public short getChunkSize() {
-		return chunkSize;
+		return chunkResolution;
 	}
 
-	public List<Points> getPointsList() {
+	public List<Chunk> getChunks() {
 		return search();
 	}
 
-	protected boolean isBlackPixel(short curHeight, short curWidth) {
+	private boolean isBlackPixel(short curWidth, short curHeight) {
 
-		if (curHeight > width - 1 || curWidth > height - 1 || curHeight < 0 || curWidth < 0) {
+		if (curWidth > imageWidth - 1 || curHeight > imageHeight - 1 || curWidth < 0 || curHeight < 0) {
 			return false;
 		}
-		int color = img.getRGB(curHeight, curWidth);
+		int color = img.getRGB(curWidth, curHeight);
 		/*
 		 * if ((color >>> 24) == 0x00) {
 		 * return false;

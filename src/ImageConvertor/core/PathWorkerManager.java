@@ -4,38 +4,47 @@ import java.awt.Point;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.management.openmbean.ArrayType;
+
 import ImageConvertor.data.Direction;
 import ImageConvertor.data.Edge;
-import ImageConvertor.data.Points;
+import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
 
-public class PathWorkerManager {
+public class PathWorkerManager implements Pathfinder {
 	Controller controller;
 	int chunkSize, imageWidth, imageHeight;
-	List<List<Points>> pointsList;
-	List<Points[][]> pathContainer = new ArrayList<>();
-	Points[][] searchMatrix;
+	List<List<Chunk>> pointsList;
+	List<Chunk[][]> pathContainer = new ArrayList<>();
+	Chunk[][] searchMatrix;
 	int boundWidth = 0, boundHeight = 0;
-	List<Points> tmp;
-	List<List<Points>> cur;
-	Points[][] copyPoints;
+	List<Chunk> tmp;
+	List<List<Chunk>> cur;
+	Chunk[][] copyPoints;
 	boolean isCanceled = false;
+	Chunk[][] chunkMatrix;
 
-	private int maxRange;
+	private int maxRange = 0;
 	private int totalConnectedPointsLimit;
 	private int limitConnectedPoints;
 	private float rangeRate;
@@ -44,11 +53,11 @@ public class PathWorkerManager {
 	private int iterationsCount;
 	private float initalPathDivider;
 	private float vaporizeDivider;
-	private ArrayBlockingQueue<String> queue;
+	private Queue<String> queue;
 
 	public PathWorkerManager(Controller controller, int totalConnectedPointsLimit, int limitConnectedPoints,
 			float rangeRate, float weightRate, float pathLengthDivider, int maxRange, float initalPathDivider,
-			int iterationsCount, float vaporizeDivider, ArrayBlockingQueue<String> queue) {
+			int iterationsCount, float vaporizeDivider, Queue<String> queue) {
 		this(controller);
 		this.totalConnectedPointsLimit = totalConnectedPointsLimit;
 		this.limitConnectedPoints = limitConnectedPoints;
@@ -73,8 +82,13 @@ public class PathWorkerManager {
 		while (boundHeight < imageHeight) {
 			boundHeight += chunkSize;
 		}
-		pointsList = controller.getForDrawContainer();
-		//clearIsLockedFlagInAllPoints();
+		pointsList = controller.getChosedLayersForDraw();
+		// clearIsLockedFlagInAllPoints();
+	}
+
+	@Override
+	public List<List<Chunk>> getSequencesOfPaths() {
+		return getPath();
 	}
 
 	private void reloadPointsContainer() {
@@ -88,20 +102,22 @@ public class PathWorkerManager {
 		}
 	}
 
-	private Points[][] getMatrix(int nextList) {
-		List<Points> temp = pointsList.get(nextList);
-		Points[][] matrix = new Points[boundHeight / chunkSize][boundWidth / chunkSize];
-		for (Points p : temp) {
-			matrix[p.myPosition.y][p.myPosition.x] = p;
+	private Chunk[][] getMatrix(int nextList) {
+		List<Chunk> temp = pointsList.get(nextList);
+		Chunk[][] matrix = new Chunk[boundHeight / chunkSize][boundWidth / chunkSize];
+		for (Chunk p : temp) {
+			matrix[p.chunkPosition.y][p.chunkPosition.x] = p;
 		}
 		return matrix;
 	}
 
-	public void getPath() {
-		List<List<Point>> finalList = new ArrayList<>();
-		Set<Points> cnt = new HashSet<>();
-		while (recursionInit(cnt)) {
+	private List<List<Chunk>> getPath() {
 
+		List<Set<Chunk>> finalList = new ArrayList<>();
+
+		// Set<Chunk> cnt = new HashSet<>();
+
+		while (recursionInit(new HashSet<>())) {
 			// System.out.println("init path creator...");
 			queue.offer(controller.getLocaleText("init_path_construcctor"));
 			// System.out.println("start create matrix");
@@ -112,17 +128,17 @@ public class PathWorkerManager {
 			// System.out.println("matrix created, start compute");
 			queue.offer(controller.getLocaleText("matrix_created"));
 
-			List<Points> currentIterationBestPath = null;
+			List<Chunk> currentIterationBestPath = new ArrayList<>();
 			AtomicInteger counter = new AtomicInteger(0);
 			List<PathWorker> workers = new ArrayList<>();
 			float lgth = Float.MAX_VALUE;
 			Map<Float, List<Edge>> paths = new ConcurrentHashMap<>();
 			int iterations = 0;
 			IntStream.rangeClosed(0, Controller.N_THREADS - 1).forEach(i -> {
-				PathWorker w = new PathWorker(ajMatrix, tmp, controller, rangeRate, weightRate,
+				PathWorker worker = new PathWorker(ajMatrix, tmp, controller, rangeRate, weightRate,
 						ThreadLocalRandom.current().nextInt(tmp.size()), i, counter, paths);
-				w.start();
-				workers.add(w);
+				worker.start();
+				workers.add(worker);
 				counter.incrementAndGet();
 			});
 			while (iterations < iterationsCount && !isCanceled) {
@@ -140,7 +156,7 @@ public class PathWorkerManager {
 								}
 							}
 						}
-						TimeUnit.MILLISECONDS.sleep(10);
+						TimeUnit.MILLISECONDS.sleep(100);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -159,7 +175,7 @@ public class PathWorkerManager {
 					currentIterationBestPath = paths.get(min).stream().map(e -> tmp.get(e.heightIndex)).toList();
 				}
 				paths.clear();
-				//counter.set(workers.size());
+				// counter.set(workers.size());
 				iterations++;
 				for (PathWorker w : workers) {
 					w.isWorkDone = false;
@@ -177,12 +193,12 @@ public class PathWorkerManager {
 			// System.out.println("all threads died.");
 			queue.offer(controller.getLocaleText("threads_die"));
 			if (isCanceled) {
-				return;
+				return null;
 			}
-			List<Points> pointsConnectedFromAllLayersInView = new ArrayList<>();
-			for (Points outer : currentIterationBestPath) {
-				c: for (List<Points> m : controller.getAllLayersContainer()) {
-					for (Points inner : m) {
+			List<Chunk> pointsConnectedFromAllLayersInView = new ArrayList<>();
+			for (Chunk outer : currentIterationBestPath) {
+				c: for (List<Chunk> m : controller.getAllLayers()) {
+					for (Chunk inner : m) {
 						if (inner.index == outer.index) {
 							pointsConnectedFromAllLayersInView.add(outer);
 							continue c;
@@ -191,69 +207,34 @@ public class PathWorkerManager {
 				}
 			}
 
-			List<Point> pathFromCurrentPoints = new ArrayList<>();
+			Set<Chunk> pathFromCurrentPoints = new HashSet<>();
 
 			pointsConnectedFromAllLayersInView.stream().forEach(e -> {
-				pathFromCurrentPoints.add(e.startPoint);
-				pathFromCurrentPoints.add(e.endPoint);
+				pathFromCurrentPoints.add(e);
 			});
 			if (pathFromCurrentPoints.size() > 5 && !isCanceled) {
+				// pathFromCurrentPoints.stream().forEach(finalList::add);
 				finalList.add(pathFromCurrentPoints);
 			}
 		}
-		/*
-		 * while (iterations < 10) {
-		 * System.gc();
-		 * System.out.println(String.format("iteration: %d, curLength: %f", iterations, lgth));
-		 * for (int i = 0; i < View.N_THREADS; i++) {
-		 * Worker apf = new Worker(ajMatrix, tmp, controller, 20f, 1f,
-		 * ThreadLocalRandom.current().nextInt(tmp.size()), i, counter);
-		 * workers.add(apf);
-		 * // service.submit(apf);
-		 * // count++;
-		 * }
-		 *
-		 * try {
-		 * while (count > 0) {
-		 * Future<Object[]> a = service.take();
-		 * if (a.isDone()) {
-		 * Object[] result = a.get();
-		 * List<Edge> list = (List<Edge>) result[1];
-		 * float nextPathLength = (float) result[0];
-		 * if (nextPathLength < lgth) {
-		 * resultEdges = list.stream().map(e -> tmp.get(e.heightIndex)).toList();
-		 * lgth = nextPathLength;
-		 * }
-		 * count--;
-		 * // System.out.println("update matrix");
-		 * updateMaxrixWeight(nextPathLength, list, ajMatrix);
-		 * } else {
-		 * continue;
-		 * }
-		 * }
-		 * 
-		 * } catch (InterruptedException | ExecutionException e) {
-		 * e.printStackTrace();
-		 * }
-		 *
-		 * iterations++;
-		 * }
-		 */
 		if (isCanceled) {
-			return;
+			return null;
 		}
-		// System.out.println("compute end. start draw");
 		queue.offer(controller.getLocaleText("comp_end"));
-		controller.setPathsPointList(finalList);
-		// System.out.println(finalList.size());
-		// PathsImagePreview pip = new PathsImagePreview(controller, finalList);
-		// PathsImagePreview pip = new PathsImagePreview(controller);
-		// pip.showImage();
+
+		List<List<Chunk>> result = new ArrayList<>();
+		for (Set<Chunk> s : finalList) {
+			result.add(new ArrayList<>(s));
+		}
+		controller.setPathsPointList(result);
+		return result;
+		// .sorted((o1, o2) -> o2.stream().findFirst().get().index - o1.stream().findFirst().get().index);
+
 	}
 
 	private void fillPathMatrix() {
-		Points[][] result = new Points[boundHeight / chunkSize][boundWidth / chunkSize];
-		for (Points[][] p : pathContainer) {
+		Chunk[][] result = new Chunk[boundHeight / chunkSize][boundWidth / chunkSize];
+		for (Chunk[][] p : pathContainer) {
 			for (int i = 0; i < p.length; i++) {
 				for (int j = 0; j < p[i].length; j++) {
 					if (p[i][j] != null && p[i][j].direction != Direction.STUB) {
@@ -271,30 +252,17 @@ public class PathWorkerManager {
 		sb.append(String.format("<svg viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">\n", imageWidth,
 				imageHeight));
 
-		/*
-		 * List<List<Point>> path = new ArrayList<>();
-		 * controller.getForDrawContainer().stream().forEach(e -> {
-		 * List<Point> temp = new ArrayList<>();
-		 * e.stream().forEach(i -> {
-		 * temp.add(i.startPoint);
-		 * temp.add(i.endPoint);
-		 * });
-		 * path.add(temp);
-		 * });
-		 */
-		List<List<Point>> path = controller.getFinalList();
+		List<List<Chunk>> path = controller.getFinalList();
 
-		// stroke-width=\"0.1\" stroke-opacity=\"1\"
-
-		for (List<Point> list : path) {
+		for (List<Chunk> list : path) {
 			sb.append("<polyline fill=\"none\" stroke=\"#000000\" stroke-width=\"0.5\" points=\"");
-			Point prev = list.get(0);
-			for (Point p : list) {
-				if (prev.distance(p) > controller.getChunkSize() * 5) {
+			Chunk prev = list.get(0);
+			for (Chunk p : list) {
+				if (prev.startPoint.distance(p.startPoint) > controller.getChunkSize() * 5) {
 					sb.append("\"/>");
 					sb.append("<polyline fill=\"none\" stroke=\"#000000\" stroke-width=\"0.5\" points=\"");
 				}
-				sb.append(p.x + "," + p.y + "\n");
+				sb.append(p.startPoint.x + "," + p.startPoint.y + "\n");
 				prev = p;
 			}
 			sb.append("\"/>");
@@ -310,18 +278,16 @@ public class PathWorkerManager {
 
 	}
 
-	private boolean recursionInit(Set<Points> result) {
+	private boolean recursionInit(Set<Chunk> result) {
 		if (isCanceled) {
 			return false;
 		}
-		// System.out.println("rec init");
 		queue.offer(controller.getLocaleText("rec_init"));
 		reloadPointsContainer();
 		int count = 0;
 		for (int i = 0; i < searchMatrix.length; i++) {
 			for (int j = 0; j < searchMatrix[i].length; j++) {
 				if (searchMatrix[i][j] != null && !searchMatrix[i][j].locked) {
-					// searchMatrix[i][j].locked = false;
 					count++;
 				}
 			}
@@ -338,17 +304,18 @@ public class PathWorkerManager {
 			return false;
 		}
 		// Set<Points> result = new HashSet<>();
-		Points cur = searchMatrix[h][w];
+		Chunk cur = searchMatrix[h][w];
 		cur.locked = true;
 		recursion(cur, result);
 
 		tmp = result.stream().collect(Collectors.toList());
 		// System.out.println("counted points: " + result.size());
 		queue.offer(controller.getLocaleText("counted_points") + ": " + result.size());
-		if (result.size() < limitConnectedPoints) {
-			return recursionInit(result);
-		}
 		/*
+		 * if (result.size() < limitConnectedPoints) {
+		 * return recursionInit(result);
+		 * }
+		 * 
 		 * Points[][] copy = new Points[searchMatrix.length][searchMatrix[0].length];
 		 * for (Points p : tmp) {
 		 * copy[p.myPosition.y][p.myPosition.x] = p;
@@ -357,26 +324,82 @@ public class PathWorkerManager {
 		 */
 		// System.out.println("rec finished");
 		queue.offer(controller.getLocaleText("rec_fin"));
-		result.clear();
+		// result.clear();
 		return true;
 	}
 
-	private void recursion(Points current, Set<Points> result) {
+	private void recursion(Chunk current, Set<Chunk> result) {
 		// collectedPoints++;
 		if (/* collectedPoints > totalConnectedPointsLimit || */result.size() > totalConnectedPointsLimit) {
 			return;
 		}
 		result.add(current);
-		List<Points> container = getRelatives(current.myPosition.y, current.myPosition.x);
-		for (Points p : container) {
+		List<Chunk> container = getRelatives(current.chunkPosition.y, current.chunkPosition.x);
+		for (Chunk p : container) {
 			// collectedPoints++;
 			result.add(p);
 			recursion(p, result);
 		}
 	}
 
-	private List<Points> getRelatives(int curHeight, int curWidth) {
-		List<Points> result = new ArrayList<>();
+	private List<Chunk> getRelatives(int curHeight, int curWidth) {
+		List<Chunk> result = new ArrayList<>();
+		/*
+		 * Chunk temp;
+		 * while (true) {
+		 * 
+		 * if (check(curHeight - 1, curWidth - 1)) {
+		 * temp = searchMatrix[curHeight - 1][curWidth - 1];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight - 1, curWidth)) {
+		 * temp = searchMatrix[curHeight - 1][curWidth];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight - 1, curWidth + 1)) {
+		 * temp = searchMatrix[curHeight - 1][curWidth + 1];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight, curWidth + 1)) {
+		 * temp = searchMatrix[curHeight][curWidth + 1];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight + 1, curWidth + 1)) {
+		 * temp = searchMatrix[curHeight + 1][curWidth + 1];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight + 1, curWidth)) {
+		 * temp = searchMatrix[curHeight + 1][curWidth];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight + 1, curWidth - 1)) {
+		 * temp = searchMatrix[curHeight + 1][curWidth - 1];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * 
+		 * } else if (check(curHeight + 1, curWidth)) {
+		 * temp = searchMatrix[curHeight + 1][curWidth];
+		 * result.add(temp);
+		 * temp.locked = true;
+		 * continue;
+		 * }
+		 * break;
+		 * }
+		 */
+
 		int temp = 1;
 		int startHeight = curHeight - temp;
 		int endHeight = curHeight + temp;
@@ -385,28 +408,28 @@ public class PathWorkerManager {
 		do {
 			for (; startWidth < endWidth; startWidth++) {
 				if (check(startHeight, startWidth)) {
-					Points cur = searchMatrix[startHeight][startWidth];
+					Chunk cur = searchMatrix[startHeight][startWidth];
 					cur.locked = true;
 					result.add(cur);
 				}
 			}
 			for (; startHeight < endHeight; startHeight++) {
 				if (check(startHeight, startWidth)) {
-					Points cur = searchMatrix[startHeight][startWidth];
+					Chunk cur = searchMatrix[startHeight][startWidth];
 					cur.locked = true;
 					result.add(cur);
 				}
 			}
 			for (; startWidth > curWidth - temp; startWidth--) {
 				if (check(startHeight, startWidth)) {
-					Points cur = searchMatrix[startHeight][startWidth];
+					Chunk cur = searchMatrix[startHeight][startWidth];
 					cur.locked = true;
 					result.add(cur);
 				}
 			}
 			for (; startHeight > curHeight - temp; startHeight--) {
 				if (check(startHeight, startWidth)) {
-					Points cur = searchMatrix[startHeight][startWidth];
+					Chunk cur = searchMatrix[startHeight][startWidth];
 					cur.locked = true;
 					result.add(cur);
 				}
@@ -417,6 +440,14 @@ public class PathWorkerManager {
 			startHeight = curHeight + temp;
 			endHeight = curHeight - temp;
 		} while (temp <= maxRange);
+
+		Comparator<Chunk> comp = new Comparator<Chunk>() {
+			@Override
+			public int compare(Chunk o1, Chunk o2) {
+				return o1.index > o2.index ? 1 : o1.index < o2.index ? -1 : 0;
+			}
+		};
+		result.sort(comp);
 		return result;
 	}
 
@@ -448,7 +479,7 @@ public class PathWorkerManager {
 
 		for (int heightIndex = 0; heightIndex < tmp.size(); heightIndex++) {
 
-			Points firstPointInRow = tmp.get(heightIndex);
+			Chunk firstPointInRow = tmp.get(heightIndex);
 			Edge firstAntInRow = new Edge(heightIndex, 0, 0f);
 			// firstAntInRow.visited = true;
 			matrix[heightIndex] = new Edge[size];
@@ -457,9 +488,9 @@ public class PathWorkerManager {
 			int widthIndex = heightIndex + 1;
 
 			for (int w = 1; w < matrix[heightIndex].length; w++) {
-				Points nextPointsInRow = tmp.get(widthIndex);
+				Chunk nextPointsInRow = tmp.get(widthIndex);
 				float distanceBetweenPoints = initalPathDivider
-						/ (float) firstPointInRow.myPosition.distance(nextPointsInRow.myPosition);
+						/ (float) firstPointInRow.chunkPosition.distance(nextPointsInRow.chunkPosition);
 				Edge nextEdgeInRow = new Edge(heightIndex, widthIndex, distanceBetweenPoints);
 				matrix[heightIndex][w] = nextEdgeInRow;
 				widthIndex++;
@@ -492,14 +523,4 @@ public class PathWorkerManager {
 		isCanceled = true;
 	}
 
-	@SuppressWarnings("unused")
-	private void clearIsLockedFlagInAllPoints() {
-		for (int i = 0; i < pointsList.size(); i++) {
-			for (Points p : pointsList.get(i)) {
-				if (p != null && p.locked) {
-					p.locked = false;
-				}
-			}
-		}
-	}
 }

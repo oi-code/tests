@@ -2,32 +2,27 @@ package ImageConvertor.core;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.ImageIcon;
 
 import ImageConvertor.data.State;
-import ImageConvertor.Main;
-import ImageConvertor.data.Points;
+import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.GCodeCreatorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
-import ImageConvertor.views.desktop.View;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
@@ -36,7 +31,7 @@ public class Controller {
 	private boolean isCanceled;
 	private boolean isPathsCreated;
 	private boolean isProcessWindowShowed;
-	private PathWorkerManager workerManager;
+	private Pathfinder workerManager;
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
@@ -47,10 +42,10 @@ public class Controller {
 	private void getLocale() {
 		Properties prop = new Properties();
 		String defLoc = Locale.getDefault().toString();
-		try {			
-			//InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
-			//InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
-			InputStream is=State.class.getResourceAsStream("locale/"+defLoc+".properties");
+		try {
+			// InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
+			// InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
+			InputStream is = State.class.getResourceAsStream("l18n/" + defLoc + ".properties");
 			InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
 			prop.load(isr);
 			STATE.setLocale(prop);
@@ -81,16 +76,16 @@ public class Controller {
 		STATE.setParsedImage(parsedImage);
 	}
 
-	public List<List<Points>> getAllLayersContainer() {
-		return STATE.getAllLayersContainer();
+	public List<List<Chunk>> getAllLayers() {
+		return STATE.getAllLayers();
 	}
 
-	public List<List<Points>> getForDrawContainer() {
-		return STATE.getForDrawContainer();
+	public List<List<Chunk>> getChosedLayersForDraw() {
+		return STATE.getChosedLayersForDraw();
 	}
 
 	public void createSVG() {
-		workerManager.createSVG();
+		
 	}
 
 	public int getLayers() {
@@ -172,15 +167,19 @@ public class Controller {
 			return;
 		}
 		Thread t = new Thread(() -> {
-			ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
+			Queue<String> queue = new ConcurrentLinkedQueue<>();
 			Thread view = new Thread(new ViewProccessStatus(this, queue));
 			view.setDaemon(true);
 			view.start();
 			// SwingUtilities.invokeLater(view);
 
-			workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
+			/*workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
+					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);*/
+			workerManager=new AntPathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
 					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
-			workerManager.getPath();
+
+			//workerManager.createClouds();
+			workerManager.getSequencesOfPaths();
 			if (isCanceled) {
 				isProcessed = false;
 			} else {
@@ -201,12 +200,12 @@ public class Controller {
 		isProcessed = false;
 		isCanceled = false;
 		Thread worker = new Thread(() -> {
-			ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
+			ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
 			Thread view = new Thread(new ViewProccessStatus(this, queue));
 			view.setDaemon(true);
 			view.start();
 			ImageParserWorker parser = new ImageParserWorker(this, queue);
-			STATE.setAllLayersContainer(parser.doTask());
+			STATE.setAllLayers(parser.doTask());
 			if (isCanceled) {
 				isProcessed = false;
 			} else {
@@ -229,7 +228,7 @@ public class Controller {
 		if (settings == null) {
 			return;
 		}
-		new GCodeCreator(this, settings);
+		new GCodeGenerator(this, settings);
 	}
 
 	public short getChunkSize() {
@@ -303,19 +302,19 @@ public class Controller {
 	 * }
 	 */
 
-	public void setFinalList(List<List<Point>> finalList) {
+	public void setFinalList(List<List<Chunk>> finalList) {
 		STATE.setChosedLayers(finalList);
 	}
 
-	public List<List<Point>> getFinalList() {
+	public List<List<Chunk>> getFinalList() {
 		return STATE.getChosedLayers();
 	}
 
-	public List<List<Point>> getPathsPointList() {
+	public List<List<Chunk>> getPathsPointList() {
 		return STATE.getPathsPointList();
 	}
 
-	public void setPathsPointList(List<List<Point>> finalList) {
+	public void setPathsPointList(List<List<Chunk>> finalList) {
 		STATE.setPathsPointList(finalList);
 	}
 

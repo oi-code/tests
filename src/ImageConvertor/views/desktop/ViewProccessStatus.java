@@ -6,7 +6,6 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Queue;
@@ -69,20 +68,21 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 			}
 		} finally {
 			controller.setProcessWindowShowed(false);
-			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+			// dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+			dispose();
 		}
 		return;
 	}
 
 	JComponent getImageLabel() {
-		InputStream is=State.class.getResourceAsStream("images/ezgif-4-66d70871c9.gif");
-		ImageIcon icon=null;
+		InputStream is = State.class.getResourceAsStream("images/ezgif-4-66d70871c9.gif");
+		ImageIcon icon = null;
 		try {
-			icon=new ImageIcon(is.readAllBytes());			
+			icon = new ImageIcon(is.readAllBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
+		// ImageIcon icon = new ImageIcon("images/ezgif-4-66d70871c9.gif");
 		icon.setImage(icon.getImage().getScaledInstance(140, 40, Image.SCALE_DEFAULT));
 		JLabel label = new JLabel(icon);
 		return label;

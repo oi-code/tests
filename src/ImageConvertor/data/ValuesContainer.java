@@ -1,13 +1,13 @@
 package ImageConvertor.data;
 
 public class ValuesContainer {
-	public float currentChanceToGoHere;
-	public float currentWishToGoHere;
+	public float currentChanceToGoThere;
+	public float currentWishToGoThere;
 	public Edge edge;
 
 	@Override
 	public String toString() {
-		return "ValuesContainer [currentChanceToGoHere=" + currentChanceToGoHere + ", currentWishToGoHere="
-				+ currentWishToGoHere + "]";
+		return "ValuesContainer [currentChanceToGoHere=" + currentChanceToGoThere + ", currentWishToGoHere="
+				+ currentWishToGoThere + "]";
 	}
 }

@@ -1,24 +1,31 @@
 package ImageConvertor.data;
 
 import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-public class Points implements Cloneable, Comparable<Points> {
+public class Chunk implements Cloneable, Comparable<Chunk> {
 	public Direction direction = Direction.STUB;
 	public boolean visited = false;
 	public boolean locked = false;
 	public int index = 0;
 	public Point startPoint;
 	public Point endPoint;
-	public Point myPosition;
+	public Point chunkPosition;
 	public float layer;
+	public float chunkTotalLuminiance;
+	public List<Chunk> avalivableChunks;
+	public int cloudIndex;
 
-	private Points() {
+	private Chunk() {
 	}
 
-	public Points(short myHeight_, short myWidth_) {
+	public Chunk(short myHeight_, short myWidth_) {
 		startPoint = new Point();
 		endPoint = new Point();
-		myPosition = new Point(myWidth_, myHeight_);
+		chunkPosition = new Point(myWidth_, myHeight_);
+		avalivableChunks = new ArrayList<>();
 
 	}
 
@@ -29,24 +36,23 @@ public class Points implements Cloneable, Comparable<Points> {
 	}
 
 	@Override
-	public Points clone() {
-		Points res = new Points();
+	public Chunk clone() {
+		Chunk res = new Chunk();
 		res.index = this.index;
 		res.direction = this.direction;
 		res.visited = this.visited;
 		res.locked = this.locked;
 		res.startPoint = this.startPoint;
 		res.endPoint = this.endPoint;
-		res.myPosition = this.myPosition;
+		res.chunkPosition = this.chunkPosition;
 		return res;
 	}
 
+
+
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + index;
-		return result;
+		return Objects.hash(index);
 	}
 
 	@Override
@@ -57,19 +63,20 @@ public class Points implements Cloneable, Comparable<Points> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Points other = (Points) obj;
-		if (index != other.index)
-			return false;
-		return true;
-	}
-
-	public String toString() {
-		return String.format("[index: %d, curPointLgth: %f, dir: %s, height %d, width %d]", index, getLength(), direction,
-				myPosition.y, myPosition.x);
+		Chunk other = (Chunk) obj;
+		return index == other.index;
 	}
 
 	@Override
-	public int compareTo(Points o) {
+	public String toString() {
+		return "Chunk [direction=" + direction + ", visited=" + visited + ", locked=" + locked + ", index=" + index
+				+ ", startPoint=" + startPoint + ", endPoint=" + endPoint + ", chunkPosition=" + chunkPosition
+				+ ", layer=" + layer + ", chunkTotalLuminiance=" + chunkTotalLuminiance + ", avalivableChunks="
+				+ avalivableChunks + ", cloudIndex=" + cloudIndex + "]";
+	}
+
+	@Override
+	public int compareTo(Chunk o) {
 		return Integer.compare(this.index, o.index);
 	}
 

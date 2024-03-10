@@ -33,14 +33,14 @@ import javax.swing.JScrollPane;
 
 import ImageConvertor.core.Controller;
 import ImageConvertor.data.Direction;
-import ImageConvertor.data.Points;
+import ImageConvertor.data.Chunk;
 
 @SuppressWarnings(value = "serial")
 public class ParsedImagePreview extends JPanel
 		implements MouseMotionListener, MouseListener, MouseWheelListener, WindowListener {
 
 	Controller controller;
-	List<List<Points>> allLayersContainer;
+	List<List<Chunk>> allLayersContainer;
 	Short s;
 	String figure;
 	JFrame mainPanel;
@@ -57,7 +57,7 @@ public class ParsedImagePreview extends JPanel
 
 	public ParsedImagePreview(Controller controllerr) {
 		controller = controllerr;
-		allLayersContainer = controllerr.getAllLayersContainer();
+		allLayersContainer = controllerr.getAllLayers();
 		s = controller.getChunkSize();
 		figure = controller.getFigure();
 		width = controller.getImageWidth();
@@ -108,16 +108,16 @@ public class ParsedImagePreview extends JPanel
 			mainPanel.setVisible(false);
 			return;
 		}
-		controller.getForDrawContainer().clear();
-		for (List<Points> currentDrawingList : allLayersContainer) {
+		controller.getChosedLayersForDraw().clear();
+		for (List<Chunk> currentDrawingList : allLayersContainer) {
 
 			layerCount++;
 			repaint();
 			if (!boxes.get(layerCount).isSelected()) {
 				continue;
 			}
-			controller.getForDrawContainer().add(currentDrawingList);
-			for (Points innerCurrentPoints : currentDrawingList) {
+			controller.getChosedLayersForDraw().add(currentDrawingList);
+			for (Chunk innerCurrentPoints : currentDrawingList) {
 
 				if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
 					continue;
