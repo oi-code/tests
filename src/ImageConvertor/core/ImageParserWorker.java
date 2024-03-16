@@ -40,7 +40,7 @@ public class ImageParserWorker {
 			steps.add(start);
 		}
 		List<List<Chunk>> results = new ArrayList<List<Chunk>>();
-		int currentAccaptedTask = 0;
+		byte currentAccaptedTask = 0;
 		for (int i = 0; i < steps.size() - 1; i++) {
 
 			SingleThreadParseImage temParseImage = new SingleThreadParseImage(controller);
@@ -54,8 +54,9 @@ public class ImageParserWorker {
 					return result;
 				}
 			});
+			currentAccaptedTask++;
 			queue.offer(
-					String.format(controller.getLocaleText("current_Accepted_layer") + ": %d", currentAccaptedTask++));
+					String.format(controller.getLocaleText("current_Accepted_layer") + ": %d", currentAccaptedTask));
 
 		}
 		int currentDoneTask = 0;

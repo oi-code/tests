@@ -49,7 +49,10 @@ public class PathsImagePreview extends JPanel
 
 	public PathsImagePreview(Controller controllerr) {
 		controller = controllerr;
-		this.forDrawContainer = controller.getPathsPointList();
+		/**
+		 * to avoid {@link CuncurentModificationException} in {@link #paintComponent()}
+		 */
+		this.forDrawContainer = new ArrayList<>(controller.getPathsPointList());
 		s = controller.getChunkSize();
 		figure = controller.getFigure();
 		width = controller.getImageWidth();
@@ -97,8 +100,8 @@ public class PathsImagePreview extends JPanel
 				int prevY = prev.endPoint.y / count;
 				int curX = cur.startPoint.x / count;
 				int curY = cur.startPoint.y / count;
-				//if (prev.chunkPosition.distance(cur.chunkPosition) < controller.getChunkSize()/4)
-					g2.drawLine(prevX, prevY, curX, curY);
+				// if (prev.chunkPosition.distance(cur.chunkPosition) < controller.getChunkSize()/4)
+				g2.drawLine(prevX, prevY, curX, curY);
 				prev = cur;
 			}
 		}

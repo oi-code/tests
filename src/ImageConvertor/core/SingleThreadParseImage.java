@@ -15,7 +15,7 @@ class SingleThreadParseImage {
 	protected short imageHeight;
 	protected short chunkResolution;
 	protected float minLum, maxLum;
-	protected int layer;
+	protected byte layer;
 	protected Controller c;
 
 	public SingleThreadParseImage(Controller c) {
@@ -37,7 +37,7 @@ class SingleThreadParseImage {
 		this.maxLum = maxLum;
 	}
 
-	public void setLayer(int layer) {
+	public void setLayer(byte layer) {
 		this.layer = layer;
 	}
 

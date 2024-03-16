@@ -1,22 +1,26 @@
 package ImageConvertor.data;
 
 import java.awt.Point;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import ImageConvertor.core.AntEdge;
 
 public class Chunk implements Cloneable, Comparable<Chunk> {
 	public Direction direction = Direction.STUB;
-	public boolean visited = false;
-	public boolean locked = false;
+	public boolean visited;
+	public boolean locked;
 	public int index = 0;
 	public Point startPoint;
 	public Point endPoint;
 	public Point chunkPosition;
-	public float layer;
+	public byte layer;
 	public float chunkTotalLuminiance;
-	public List<Chunk> avalivableChunks;
+	public Set<Chunk> avalivableChunks;
 	public int cloudIndex;
+	public Set<AntEdge> edges;
 
 	private Chunk() {
 	}
@@ -25,7 +29,8 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 		startPoint = new Point();
 		endPoint = new Point();
 		chunkPosition = new Point(myWidth_, myHeight_);
-		avalivableChunks = new ArrayList<>();
+		avalivableChunks = new HashSet<>();
+		edges = new HashSet<>();
 
 	}
 
@@ -48,7 +53,9 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 		return res;
 	}
 
-
+	public List<Chunk> getFreeAroundChunks() {
+		return avalivableChunks.stream().filter(e -> !e.locked).toList();
+	}
 
 	@Override
 	public int hashCode() {
