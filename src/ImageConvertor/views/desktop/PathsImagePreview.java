@@ -50,7 +50,8 @@ public class PathsImagePreview extends JPanel
 	public PathsImagePreview(Controller controllerr) {
 		controller = controllerr;
 		/**
-		 * to avoid {@link CuncurentModificationException} in {@link #paintComponent()}
+		 * to avoid {@link java.util.ConcurrentModificationException} in
+		 * {@link #paintComponent()}
 		 */
 		this.forDrawContainer = new ArrayList<>(controller.getPathsPointList());
 		s = controller.getChunkSize();

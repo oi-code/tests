@@ -1,7 +1,9 @@
 package ImageConvertor.data;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -20,9 +22,10 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 	public float chunkTotalLuminiance;
 	public Set<Chunk> avalivableChunks;
 	public int cloudIndex;
-	public Set<AntEdge> edges;
+	public List<AntEdge> edges;
 
 	private Chunk() {
+
 	}
 
 	public Chunk(short myHeight_, short myWidth_) {
@@ -30,7 +33,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 		endPoint = new Point();
 		chunkPosition = new Point(myWidth_, myHeight_);
 		avalivableChunks = new HashSet<>();
-		edges = new HashSet<>();
+		edges = new LinkedList<>();
 
 	}
 

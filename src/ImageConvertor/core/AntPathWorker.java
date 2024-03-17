@@ -2,6 +2,7 @@ package ImageConvertor.core;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 import ImageConvertor.data.Chunk;
@@ -47,7 +48,7 @@ public class AntPathWorker implements Runnable {
 	 * CONST/path.length
 	 */
 
-	private void chanceToGo() {
+	private float chanceToGo() {
 		short a = 1;
 		Chunk from = new Chunk(a, a);
 		List<Chunk> avalivableChunks = from.getFreeAroundChunks();
@@ -63,6 +64,20 @@ public class AntPathWorker implements Runnable {
 		avalivableChunks.stream().forEach(e -> {
 			chances.add(chanceToGoTo(transitionCost, CONST_A, from, e) / CHANCE_TO_ALL);
 		});
+		chances.sort((o1, o2) -> Float.compare(o1, o2));
+		ThreadLocalRandom tlr = ThreadLocalRandom.current();
+		float random = tlr.nextFloat();
+
+		float resultChance = 0f;
+		float prev = 0f;
+		for (Float f : chances) {
+			if (f >= prev && f < random) {
+				resultChance = f;
+				break;
+			}
+			prev = f;
+		}
+		return resultChance;
 
 	}
 

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ImageConvertor.data.Chunk;
+import ImageConvertor.views.desktop.View;
 
 public class AntPathWorkerManager implements Pathfinder {
 
@@ -58,7 +59,8 @@ public class AntPathWorkerManager implements Pathfinder {
 
 	@Override
 	public List<List<Chunk>> getSequencesOfPaths() {
-		String pa = System.getProperty("user.home") + "\\Desktop\\co8nt.txt";
+
+		String pa = View.DESKTOP_PATH + "\\co8nt.txt";
 
 		Path p = Paths.get(pa);
 		List<Set<Chunk>> clouds = createClouds();
@@ -309,6 +311,21 @@ public class AntPathWorkerManager implements Pathfinder {
 				if (check != null) {
 					// aroundChunks.add(check);
 					seed.avalivableChunks.add(check);
+					AntEdge edge = new AntEdge(seed, check);
+					if (!seed.edges.contains(edge)) {
+						edge.changeDirection();
+						if (!seed.edges.contains(edge)) {
+							seed.edges.add(edge);
+						}
+					}
+					if (!check.edges.contains(edge)) {
+						edge.changeDirection();
+						{
+							if (!check.edges.contains(edge)) {
+								check.edges.add(edge);
+							}
+						}
+					}
 				}
 			}
 		}
@@ -385,6 +402,7 @@ public class AntPathWorkerManager implements Pathfinder {
 		// we decrement height cursor because it now one position higher because of previous "while" step
 		currentHeight--;
 		// we decrement width cursor because we don't need to add chunk from previous "while" step
+		// {@link AntPathWorketManager.java:<<350>>}
 		currentWidth--;
 		// here ">=" instead of ">" because we need to return to start width position.
 		// from bottom right to bottom left
