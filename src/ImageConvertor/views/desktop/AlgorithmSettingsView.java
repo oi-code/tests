@@ -124,7 +124,7 @@ public class AlgorithmSettingsView extends JDialog {
 		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 
 		JFormattedTextField input = new JFormattedTextField(formatter);
-		input.setValue(20);
+		input.setValue(3);
 
 		container.add(text);
 		container.add(input);

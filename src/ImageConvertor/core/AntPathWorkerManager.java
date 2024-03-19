@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -82,6 +83,12 @@ public class AntPathWorkerManager implements Pathfinder {
 			e1.printStackTrace();
 		}
 
+		result.stream().forEach(e -> {
+			e.stream().forEach(el -> {
+				System.out.println(el.avalivableChunks.size() + " " + el.edges.size());
+			});
+		});
+
 		controller.setPathsPointList(result);
 		return result;
 	}
@@ -98,8 +105,10 @@ public class AntPathWorkerManager implements Pathfinder {
 	 * take selected layers after parsed image and create one-layer-chunk matrix from all layers
 	 */
 	private Chunk[][] createOneLayerFromAllLayers() {
-
-		List<List<Chunk>> allLayers = controller.getChosedLayersForDraw();
+		/**
+		 * copy list to avoid {@link java.util.ConcurrentModificationException}
+		 */
+		List<List<Chunk>> allLayers = new ArrayList<>(controller.getChosedLayersForDraw());
 		int height = (controller.getImageHeight() - controller.getImageHeight() % chunkSize) / chunkSize;
 		int width = (controller.getImageWidth() - controller.getImageWidth() % chunkSize) / chunkSize;
 
@@ -250,8 +259,8 @@ public class AntPathWorkerManager implements Pathfinder {
 			/* add all new chunks to result */
 			input.addAll(check);
 			// input.addAll(buffer);
-			queue.offer("holes:" + check.size() + ",total:" + totalChunks + ",current:" + input.size() + ",cloud:"
-					+ cloudIndex);
+			queue.offer("holes:" + check.size() + ", connected " + (buffer.size() + check.size() + input.size())
+					+ " of " + totalChunks + ",cloud:" + cloudIndex);
 
 		}
 		input.addAll(buffer);
@@ -293,7 +302,10 @@ public class AntPathWorkerManager implements Pathfinder {
 	 * }
 	 */
 
-	/* get EVERY element around chunk */
+	/*
+	 * get EVERY element around chunk
+	 * and set edges between
+	 */
 	private void setAroundChunks(Chunk seed) {
 		// Set<Chunk> aroundChunks = new HashSet<>();
 		if (seed.avalivableChunks.size() != 0) {
@@ -312,20 +324,22 @@ public class AntPathWorkerManager implements Pathfinder {
 					// aroundChunks.add(check);
 					seed.avalivableChunks.add(check);
 					AntEdge edge = new AntEdge(seed, check);
-					if (!seed.edges.contains(edge)) {
-						edge.changeDirection();
-						if (!seed.edges.contains(edge)) {
-							seed.edges.add(edge);
-						}
-					}
-					if (!check.edges.contains(edge)) {
-						edge.changeDirection();
-						{
-							if (!check.edges.contains(edge)) {
-								check.edges.add(edge);
-							}
-						}
-					}
+					seed.edges.add(edge);
+					check.edges.add(edge);
+					/*
+					 * if (!seed.edges.contains(edge)) {
+					 * edge.swapVertexes();
+					 * if (!seed.edges.contains(edge)) {
+					 * seed.edges.add(edge);
+					 * }
+					 * }
+					 * if (!check.edges.contains(edge)) {
+					 * edge.swapVertexes();
+					 * if (!check.edges.contains(edge)) {
+					 * check.edges.add(edge);
+					 * }
+					 * }
+					 */
 				}
 			}
 		}

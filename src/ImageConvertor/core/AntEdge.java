@@ -5,14 +5,14 @@ import java.util.Objects;
 import ImageConvertor.data.Chunk;
 
 public class AntEdge {
-	private Chunk from;
-	private Chunk to;
+	private Chunk vertexOne;
+	private Chunk vertexTwo;
 	private float distance;
 	private float transitionCost;
 
 	public AntEdge(Chunk from, Chunk to) {
-		this.from = from;
-		this.to = to;
+		this.vertexOne = from;
+		this.vertexTwo = to;
 		distance = (float) from.chunkPosition.distance(to.chunkPosition);
 	}
 
@@ -28,15 +28,33 @@ public class AntEdge {
 		this.transitionCost = transitionCost;
 	}
 
-	public void changeDirection() {
-		Chunk temp = from;
-		from = to;
-		to = temp;
+	public void swapVertexes() {
+		Chunk temp = this.vertexOne;
+		this.vertexOne = this.vertexTwo;
+		this.vertexTwo = temp;
 	}
+
+	/*
+	 * public boolean isTheSameEdge(AntEdge other) {
+	 * Chunk vertexOne = other.vertexOne;
+	 * Chunk vertexTwo = other.vertexTwo;
+	 * if (this.vertexOne == vertexOne) {
+	 * if (this.vertexTwo == vertexTwo) {
+	 * return true;
+	 * }
+	 * } else if (this.vertexOne == vertexTwo) {
+	 * if (this.vertexTwo == vertexOne) {
+	 * return true;
+	 * }
+	 * }
+	 * return false;
+	 * // return (aa == from || aa == to) && (bb == from || bb == to);
+	 * }
+	 */
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(from.index, to.index);
+		return Objects.hash((vertexOne.index + vertexTwo.index) * 31);
 	}
 
 	@Override
@@ -48,7 +66,18 @@ public class AntEdge {
 		if (getClass() != obj.getClass())
 			return false;
 		AntEdge other = (AntEdge) obj;
-		return Objects.equals(from.index, other.from.index) && Objects.equals(to.index, other.to.index);
+		Chunk vertexOne = other.vertexOne;
+		Chunk vertexTwo = other.vertexTwo;
+		if (this.vertexOne == vertexOne) {
+			if (this.vertexTwo == vertexTwo) {
+				return true;
+			}
+		} else if (this.vertexOne == vertexTwo) {
+			if (this.vertexTwo == vertexOne) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

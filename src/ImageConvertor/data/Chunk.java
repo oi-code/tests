@@ -22,7 +22,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 	public float chunkTotalLuminiance;
 	public Set<Chunk> avalivableChunks;
 	public int cloudIndex;
-	public List<AntEdge> edges;
+	public Set<AntEdge> edges;
 
 	private Chunk() {
 
@@ -33,7 +33,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 		endPoint = new Point();
 		chunkPosition = new Point(myWidth_, myHeight_);
 		avalivableChunks = new HashSet<>();
-		edges = new LinkedList<>();
+		edges = new HashSet<>();
 
 	}
 
