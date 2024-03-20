@@ -61,9 +61,6 @@ public class AntPathWorkerManager implements Pathfinder {
 	@Override
 	public List<List<Chunk>> getSequencesOfPaths() {
 
-		String pa = View.DESKTOP_PATH + "\\co8nt.txt";
-
-		Path p = Paths.get(pa);
 		List<Set<Chunk>> clouds = createClouds();
 
 		List<List<Chunk>> result = new ArrayList<>();
@@ -73,21 +70,28 @@ public class AntPathWorkerManager implements Pathfinder {
 		// result = result.stream().sorted((o1, o2) -> o2.get(0).index - o1.get(0).index).toList();
 		// result.stream().forEach(element -> element.stream().forEach(e -> e.avalivableChunks =
 		// getAroundChunks(e)));
-		StringBuilder sb = new StringBuilder();
-		result.stream().forEach(el -> el.stream().map(e -> e.index).sorted().forEach(ee -> sb.append(ee + "\n")));
+		/*
+		 * StringBuilder sb = new StringBuilder();
+		 * String pa = View.DESKTOP_PATH + "\\co8nt.txt";
+		 * Path p = Paths.get(pa);
+		 * result.stream().forEach(el -> el.stream().map(e -> e.index).sorted().forEach(ee -> sb.append(ee +
+		 * "\n")));
+		 * 
+		 * try {
+		 * Files.deleteIfExists(p);
+		 * Files.write(p, sb.toString().getBytes());
+		 * } catch (IOException e1) {
+		 * e1.printStackTrace();
+		 * }
+		 */
 
-		try {
-			Files.deleteIfExists(p);
-			Files.write(p, sb.toString().getBytes());
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
-		result.stream().forEach(e -> {
-			e.stream().forEach(el -> {
-				System.out.println(el.avalivableChunks.size() + " " + el.edges.size());
-			});
-		});
+		/*
+		 * result.stream().forEach(e -> {
+		 * e.stream().forEach(el -> {
+		 * System.out.println(el.avalivableChunks.size() + " " + el.edges.size());
+		 * });
+		 * });
+		 */
 
 		controller.setPathsPointList(result);
 		return result;
@@ -233,10 +237,12 @@ public class AntPathWorkerManager implements Pathfinder {
 		queue.offer("holes found: " + check.size());
 		input.addAll(check);
 		/* if we found any free chunks, we can expanse this cloud */
+		int counter = 0;
 		while (check.size() > 0 && !isTaskCanceled) {
 			/* free memory */
 			System.gc();
 			check.clear();
+			counter++;
 			/* add every new free element to result and lock it */
 			Iterator<Chunk> iter = new HashSet<>(input).iterator();
 			while (iter.hasNext() && !isTaskCanceled) {
@@ -259,8 +265,11 @@ public class AntPathWorkerManager implements Pathfinder {
 			/* add all new chunks to result */
 			input.addAll(check);
 			// input.addAll(buffer);
-			queue.offer("holes:" + check.size() + ", connected " + (buffer.size() + check.size() + input.size())
-					+ " of " + totalChunks + ",cloud:" + cloudIndex);
+			if (counter == 100) {
+				queue.offer("holes:" + check.size() + ", connected " + (buffer.size() + check.size() + input.size())
+						+ " of " + totalChunks + ",cloud:" + cloudIndex);
+				counter = 0;
+			}
 
 		}
 		input.addAll(buffer);

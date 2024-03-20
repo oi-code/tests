@@ -1,5 +1,6 @@
 package ImageConvertor.core;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,52 +49,78 @@ public class AntPathWorker implements Runnable {
 	 * CONST/path.length
 	 */
 
-	private float chanceToGo() {
-		short a = 1;
-		Chunk from = new Chunk(a, a);
-		List<Chunk> avalivableChunks = from.getFreeAroundChunks();
-		float transitionCost = 0.5f;
+	private Chunk whereToGo(Chunk from) {
 
-		final float CONST_A = 1f;
+		final float INVERSE_DISTANCE_DIVIDER = 1f;
 		final float CONST_B = 1f;
 		final float CONST_C = 1f;
 
-		final float CHANCE_TO_ALL = chanceToGoToAll(avalivableChunks, transitionCost, CONST_A, from);
+		final float CHANCE_TO_ALL = chanceToGoToAll(INVERSE_DISTANCE_DIVIDER, from);
 
-		List<Float> chances = new LinkedList<>();
-		avalivableChunks.stream().forEach(e -> {
-			chances.add(chanceToGoTo(transitionCost, CONST_A, from, e) / CHANCE_TO_ALL);
+		List<Object[]> chances = new LinkedList<>();
+		from.getFreeAroundChunks().stream().forEach(to -> {
+			Object[] temp = chanceToGoTo(INVERSE_DISTANCE_DIVIDER, from, to);
+			temp[1] = (float) temp[1] / CHANCE_TO_ALL;
+			chances.add(temp);
 		});
-		chances.sort((o1, o2) -> Float.compare(o1, o2));
+		chances.sort((o1, o2) -> Float.compare((float) o1[1], (float) o2[1]));
 		ThreadLocalRandom tlr = ThreadLocalRandom.current();
+
 		float random = tlr.nextFloat();
 
-		float resultChance = 0f;
-		float prev = 0f;
-		for (Float f : chances) {
-			if (f >= prev && f < random) {
-				resultChance = f;
+		AntEdge resultEdge = null;
+		float prev = 0;
+		for (Object[] f : chances) {
+			float check = (float) f[1];
+			if (check >= prev && (float) check < random) {
+				resultEdge = (AntEdge) f[0];
 				break;
 			}
-			prev = f;
+			prev = check;
 		}
-		return resultChance;
-
+		if (chances.size() > 0 && resultEdge == null) {
+			resultEdge = (AntEdge) chances.get(chances.size() - 1)[0];
+		}
+		if (resultEdge != null) {
+			resultEdge.visited = true;
+			Chunk result = resultEdge.vertexOne == from ? resultEdge.vertexTwo : resultEdge.vertexOne;
+			return result;
+		}
+		return null;
 	}
 
-	private float chanceToGoToAll(List<Chunk> avalivableChunks, float transitionCost, float CONST_A, Chunk from) {
+	private float chanceToGoToAll(float INVERSE_DISTANCE_DIVIDER, Chunk from) {
 		AtomicReference<Float> result = new AtomicReference<>(0f);
-		avalivableChunks.stream().forEach(e -> {
-			result.set(
-					result.get() + (transitionCost * (float) (CONST_A / from.chunkPosition.distance(e.chunkPosition))));
-		});
+		from.edges.stream().filter(e -> !e.visited).forEach(e -> result.set(
+				result.get() + e.getTransitionCost() * (INVERSE_DISTANCE_DIVIDER / e.distanceBetweenVertexes())));
 		return result.get();
 	}
 
-	private float chanceToGoTo(float transitionCost, float CONST_A, Chunk from, Chunk to) {
-		AtomicReference<Float> result = new AtomicReference<>(0f);
-		result.set(result.get() + (float) (transitionCost * (CONST_A / from.chunkPosition.distance(to.chunkPosition))));
-		return result.get();
+	/*
+	 * if @return value is null, then we can't continue path finding
+	 */
+	private Object[] chanceToGoTo(float INVERSE_DISTANCE_DIVIDER, Chunk from, Chunk to) {
+		AntEdge edge = null;
+		/*
+		 * find the same edge in two vertexes
+		 */
+		exit: for (AntEdge fromEdge : from.edges) {
+			for (AntEdge toEdge : to.edges) {
+				// if (fromEdge.equals(toEdge)) {
+				if (fromEdge == toEdge) {
+					edge = fromEdge;
+					break exit;
+				}
+			}
+		}
+		if (edge == null) {
+			return null;
+		}
+		float chance = edge.getTransitionCost() * (INVERSE_DISTANCE_DIVIDER / edge.distanceBetweenVertexes());
+		Object[] result = new Object[2];
+		result[0] = edge;
+		result[1] = chance;
+		return result;
 	}
 
 }

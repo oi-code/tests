@@ -5,18 +5,19 @@ import java.util.Objects;
 import ImageConvertor.data.Chunk;
 
 public class AntEdge {
-	private Chunk vertexOne;
-	private Chunk vertexTwo;
+	public Chunk vertexOne;
+	public Chunk vertexTwo;
+	public boolean visited;
 	private float distance;
 	private float transitionCost;
 
-	public AntEdge(Chunk from, Chunk to) {
-		this.vertexOne = from;
-		this.vertexTwo = to;
-		distance = (float) from.chunkPosition.distance(to.chunkPosition);
+	public AntEdge(Chunk vertexOne, Chunk vertexTwo) {
+		this.vertexOne = vertexOne;
+		this.vertexTwo = vertexTwo;
+		distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
 	}
 
-	public float getDistance() {
+	public float distanceBetweenVertexes() {
 		return distance;
 	}
 
