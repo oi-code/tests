@@ -67,41 +67,13 @@ public class AntPathWorkerManager implements Pathfinder {
 		for (Set<Chunk> s : clouds) {
 			result.add(new ArrayList<>(s));
 		}
-		// result = result.stream().sorted((o1, o2) -> o2.get(0).index - o1.get(0).index).toList();
-		// result.stream().forEach(element -> element.stream().forEach(e -> e.avalivableChunks =
-		// getAroundChunks(e)));
-		/*
-		 * StringBuilder sb = new StringBuilder();
-		 * String pa = View.DESKTOP_PATH + "\\co8nt.txt";
-		 * Path p = Paths.get(pa);
-		 * result.stream().forEach(el -> el.stream().map(e -> e.index).sorted().forEach(ee -> sb.append(ee +
-		 * "\n")));
-		 * 
-		 * try {
-		 * Files.deleteIfExists(p);
-		 * Files.write(p, sb.toString().getBytes());
-		 * } catch (IOException e1) {
-		 * e1.printStackTrace();
-		 * }
-		 */
-
-		/*
-		 * result.stream().forEach(e -> {
-		 * e.stream().forEach(el -> {
-		 * System.out.println(el.avalivableChunks.size() + " " + el.edges.size());
-		 * });
-		 * });
-		 */
-
 		controller.setPathsPointList(result);
 		return result;
 	}
 
 	private List<Set<Chunk>> createClouds() {
-		// Chunk[][] layers
 		chunkMatrix = createOneLayerFromAllLayers();
-		List<Set<Chunk>> clouds = getCloudOfChunks(Integer.MAX_VALUE);
-		// clouds = clouds.stream().toList();
+		List<Set<Chunk>> clouds = getCloudOfChunks(/*Integer.MAX_VALUE*/20);
 		return clouds;
 	}
 
@@ -166,57 +138,11 @@ public class AntPathWorkerManager implements Pathfinder {
 
 		result.add(seed);
 		seed.locked = true;
-		// rec(result, seed, 0);
-		// Chunk next= getNextChunk(seed);
-		/*
-		 * if (chunkSize < 3) {
-		 * 
-		 * Chunk next = getNextChunk(seed);
-		 * queue.offer("start while in cloud");
-		 * while (next != null && !isTaskCanceled) {
-		 * next.locked = true;
-		 * next.cloudIndex = cloudIndex;
-		 * result.add(next);
-		 * next = getNextChunk(seed);
-		 * }
-		 * queue.offer("while ended");
-		 * }
-		 */
-
 		/* after adding seed to result set, we can start compute cloud */
 		createCloud(result, cloudIndex);
-
-		/* set cloud index and find around chunks around every chunk in result set */
-		/*
-		 * result.stream().forEach(e -> {
-		 * e.cloudIndex = cloudIndex;
-		 * e.avalivableChunks = getAroundChunks(e);
-		 * });
-		 * return result;
-		 */
 		return result;
 	}
 
-	/*
-	 * private Chunk canGoRight(Chunk seed) {
-	 * return getAroundChunks(seed).stream().filter(
-	 * e -> e.chunkPosition.x > seed.chunkPosition.x && e.chunkPosition.y == seed.chunkPosition.y &&
-	 * !e.locked)
-	 * .findFirst().orElse(null);
-	 * }
-	 * 
-	 * private Chunk canGoDown(Chunk seed) {
-	 * return getAroundChunks(seed).stream().filter(
-	 * e -> e.chunkPosition.y > seed.chunkPosition.y && e.chunkPosition.x == seed.chunkPosition.x &&
-	 * !e.locked)
-	 * .findFirst().orElse(null);
-	 * }
-	 */
-
-	/*
-	 * VERY not eficient.in every loop we check every chunk in cloud, despite exist it cloud or not.
-	 * to improve it, need to not check every time all set of chunks, only free chunks
-	 */
 	private void createCloud(Set<Chunk> input, short cloudIndex) {
 		queue.offer("check holes");
 
@@ -264,7 +190,6 @@ public class AntPathWorkerManager implements Pathfinder {
 			}
 			/* add all new chunks to result */
 			input.addAll(check);
-			// input.addAll(buffer);
 			if (counter == 100) {
 				queue.offer("holes:" + check.size() + ", connected " + (buffer.size() + check.size() + input.size())
 						+ " of " + totalChunks + ",cloud:" + cloudIndex);
@@ -274,46 +199,10 @@ public class AntPathWorkerManager implements Pathfinder {
 		}
 		input.addAll(buffer);
 		input.addAll(check);
-		// input.stream().filter(e -> !e.locked).forEach(System.out::println);
 	}
 
 	/*
-	 * private Chunk getNextChunk(Chunk seed) {
-	 * return getAroundChunks(seed).stream().filter(element ->
-	 * !element.locked).findFirst().orElse(null);
-	 * }
-	 */
-
-	/*
-	 * private void rec(Set<Chunk> result, Chunk seed, int level) {
-	 * System.gc();
-	 * List<Chunk> seeds = getAroundNotLockedChunks(seed);
-	 * level++;
-	 * final int finLev = level;
-	 * if (seeds.size() > 0) {
-	 * result.addAll(seeds);
-	 * seeds.stream().forEach(e -> {
-	 * e.locked = true;
-	 * rec(result, e, finLev);
-	 * });
-	 * }
-	 * //System.out.println("return from recursion " + finLev);
-	 * queue.offer("recursion level :" + finLev);
-	 * return;
-	 * 
-	 * }
-	 */
-
-	/* get every FREE element around chunk */
-	/*
-	 * private List<Chunk> getAroundNotLockedChunks(Chunk seed) {
-	 * return seed.avalivableChunks.stream().filter(e -> !e.locked).toList();
-	 * }
-	 */
-
-	/*
-	 * get EVERY element around chunk
-	 * and set edges between
+	 * get EVERY element around chunk and set edges between
 	 */
 	private void setAroundChunks(Chunk seed) {
 		// Set<Chunk> aroundChunks = new HashSet<>();
@@ -335,24 +224,9 @@ public class AntPathWorkerManager implements Pathfinder {
 					AntEdge edge = new AntEdge(seed, check);
 					seed.edges.add(edge);
 					check.edges.add(edge);
-					/*
-					 * if (!seed.edges.contains(edge)) {
-					 * edge.swapVertexes();
-					 * if (!seed.edges.contains(edge)) {
-					 * seed.edges.add(edge);
-					 * }
-					 * }
-					 * if (!check.edges.contains(edge)) {
-					 * edge.swapVertexes();
-					 * if (!check.edges.contains(edge)) {
-					 * check.edges.add(edge);
-					 * }
-					 * }
-					 */
 				}
 			}
 		}
-		// return aroundChunks;
 	}
 
 	private boolean checkBound(short widthPosition, short heightPosition) {

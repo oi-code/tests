@@ -79,7 +79,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 
 	@Override
 	public String toString() {
-		return "Chunk [direction=" + direction + ", visited=" + visited + ", locked=" + locked + ", index=" + index
+		return "Chunk [visited=" + visited + ", locked=" + locked + ", index=" + index
 				+ ", startPoint=" + startPoint + ", endPoint=" + endPoint + ", chunkPosition=" + chunkPosition
 				+ ", layer=" + layer + ", chunkTotalLuminiance=" + chunkTotalLuminiance + ", avalivableChunks="
 				+ avalivableChunks + ", cloudIndex=" + cloudIndex + "]";

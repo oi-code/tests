@@ -1,11 +1,13 @@
 package ImageConvertor;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import javax.swing.UIManager;
 
 import ImageConvertor.core.AntEdge;
+import ImageConvertor.core.AntPathWorker;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
 
@@ -19,7 +21,7 @@ public class Main {
 		} catch (Exception e) {
 		}
 		try {
-			View.getInstance();
+			// View.getInstance();
 			/*
 			 * AtomicReference<Float> fl = new AtomicReference<>(0f);
 			 * IntStream.range(0, 10).forEach(e -> {
@@ -57,6 +59,7 @@ public class Main {
 			 * System.out.println(ed.getDistance());
 			 * System.out.println(de.getDistance());
 			 */
+			new AntPathWorker().TEST();
 
 		} catch (Throwable e) {
 			e.printStackTrace();
