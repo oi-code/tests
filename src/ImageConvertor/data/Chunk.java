@@ -1,9 +1,7 @@
 package ImageConvertor.data;
 
 import java.awt.Point;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -79,10 +77,10 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 
 	@Override
 	public String toString() {
-		return "Chunk [visited=" + visited + ", locked=" + locked + ", index=" + index
-				+ ", startPoint=" + startPoint + ", endPoint=" + endPoint + ", chunkPosition=" + chunkPosition
-				+ ", layer=" + layer + ", chunkTotalLuminiance=" + chunkTotalLuminiance + ", avalivableChunks="
-				+ avalivableChunks + ", cloudIndex=" + cloudIndex + "]";
+		return "Chunk [visited=" + visited + ", locked=" + locked + ", index=" + index + ", startPoint=" + startPoint
+				+ ", endPoint=" + endPoint + ", chunkPosition=" + chunkPosition + ", layer=" + layer
+				+ ", chunkTotalLuminiance=" + chunkTotalLuminiance + ", avalivableChunksSise=" + avalivableChunks.size()
+				+ ", cloudIndex=" + cloudIndex + "]";
 	}
 
 	@Override

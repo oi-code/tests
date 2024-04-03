@@ -1,6 +1,5 @@
 package ImageConvertor.core;
 
-import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.ImageIcon;
@@ -85,7 +83,7 @@ public class Controller {
 	}
 
 	public void createSVG() {
-		
+
 	}
 
 	public int getLayers() {
@@ -173,13 +171,16 @@ public class Controller {
 			view.start();
 			// SwingUtilities.invokeLater(view);
 
-			/*workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
-					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);*/
-			workerManager=new AntPathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
+			/*
+			 * workerManager = new PathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints,
+			 * rangeRate,
+			 * weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
+			 */
+			workerManager = new AntPathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
 					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
 
-			//workerManager.createClouds();
-			workerManager.getSequencesOfPaths();
+			// workerManager.createClouds();
+			workerManager.getSequencesOfClouds();
 			if (isCanceled) {
 				isProcessed = false;
 			} else {

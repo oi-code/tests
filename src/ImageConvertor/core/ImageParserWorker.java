@@ -72,8 +72,8 @@ public class ImageParserWorker {
 				try {
 					res = temp.get();
 					results.add(res);
-					queue.offer(String.format(controller.getLocaleText("current_Done_Layer") + ": %d",
-							Math.round(res.get(0).layer)));
+					/*queue.offer(String.format(controller.getLocaleText("current_Done_Layer") + ": %d",
+							Double.valueOf(1d)));//Math.round(res.get(0).layer)));*/
 
 					currentDoneTask++;
 				} catch (InterruptedException e) {

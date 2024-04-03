@@ -1,6 +1,5 @@
 package ImageConvertor.core;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import ImageConvertor.data.Chunk;
@@ -8,15 +7,15 @@ import ImageConvertor.data.Chunk;
 public class AntEdge {
 	public Chunk vertexOne;
 	public Chunk vertexTwo;
-	public boolean[] visited;
+	public boolean visited;
 	private float distance;
-	private float transitionCost=0.5f;
+	private float transitionCost = 0.5f;
 
 	public AntEdge(Chunk vertexOne, Chunk vertexTwo) {
 		this.vertexOne = vertexOne;
 		this.vertexTwo = vertexTwo;
 		distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
-		visited = new boolean[1];
+		// visited = new boolean[1];
 	}
 
 	public float distanceBetweenVertexes() {
@@ -83,8 +82,8 @@ public class AntEdge {
 
 	@Override
 	public String toString() {
-		return "AntEdge [vertexOne=" + vertexOne.index + ", vertexTwo=" + vertexTwo.index + ", visited=" + Arrays.toString(visited)
-				+ ", distance=" + distance + ", transitionCost=" + transitionCost + "]";
+		return "AntEdge [vertexOne=" + vertexOne.index + ", vertexTwo=" + vertexTwo.index + ", distance=" + distance
+				+ ", transitionCost=" + transitionCost + "]";
 	}
 
 }

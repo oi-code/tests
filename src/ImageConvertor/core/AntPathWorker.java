@@ -1,59 +1,129 @@
 package ImageConvertor.core;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import ImageConvertor.data.Chunk;
+import ImageConvertor.views.desktop.View;
 
 public class AntPathWorker implements Runnable {
 
+	public class DataHolder {
+		public int index;
+		public float distance;
+		public float transitionCost = 0.5f;
+		public int h;
+		public int w;
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getEnclosingInstance().hashCode();
+			result = prime * result + Objects.hash(h, w);
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			DataHolder other = (DataHolder) obj;
+			if (this.w == other.w && this.h == other.h) {
+				return true;
+			} else if (this.w == other.h && this.h == other.w) {
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public String toString() {
+			return h + "." + w + " ";
+		}
+
+		private AntPathWorker getEnclosingInstance() {
+			return AntPathWorker.this;
+		}
+	}
+
 	private boolean printTestData;
+	private List<Chunk> result;
+	private List<Chunk> input;
+	private DataHolder[][] matrix;
+
+	public AntPathWorker() {
+	}
+
+	public AntPathWorker(List<Chunk> input) {
+		result = new ArrayList<>();
+		this.input = input;
+		matrix = new DataHolder[input.size()][];
+		clearVisitedFlags();
+	}
 
 	@Override
 	public void run() {
 
+		List<List<Chunk>> cont = new LinkedList<>();
+
+		for (Chunk startSeed : input) {
+			List<Chunk> currentSequence = new LinkedList<>();
+			startSeed.locked = true;
+			currentSequence.add(startSeed);
+			Chunk current = startSeed;
+			while (currentSequence.size() < input.size()) {
+				Optional<Chunk> next = whereToGo(current);
+				if (next.isPresent()) {
+					Chunk nextChunk = next.get();
+					nextChunk.locked = true;
+					currentSequence.add(nextChunk);
+					current = nextChunk;
+				} else {
+					break;
+				}
+			}
+			clearVisitedFlags();
+			cont.add(currentSequence);
+		}
+		List<Chunk> rs = cont.stream().max((o1, o2) -> Integer.compare(o1.size(), o2.size())).get();
+		// Set<Chunk> hash = new HashSet<>(rs);
+		// System.out.println(rs.size() + " " + hash.size());
+		result.addAll(rs);
+	}
+
+	public List<Chunk> getResult() {
+		return result;
+	}
+
+	private void clearVisitedFlags() {
+		input.stream().forEach(e -> e.locked = false);
 	}
 
 	/*
-	 * для работы необходима матрица смежности
-	 * 
-	 * первый метод описывает желание перехода из одной точки в другую
-	 * выглядит это так
-	 * 
-	 * первый метод:
-	 * вероятность перехода из вершины FROM в вершину TO будет равняться:
-	 * 
-	 * количество феромона, лежащего на грани между FROM в TO умноженное на CONST делёная
-	 * на расстояние между этими ОТКУДА в КУДА
-	 * 
-	 * feramon*(CONST/from.distance(to))
-	 * 
-	 * делёному на сумму всех желаний перейти из FROM во все доступные TO (не посещённые)
-	 * сумма вероятностей должна равняться 1
-	 * 
-	 * итоговая вероятность получается из
-	 * генерируется случайное число
-	 * 
-	 * например 0.4
-	 * 
-	 * из метода выше получаются вероятности перехода в доступные не посещённые вершины
-	 * например 3 вершины с вероятностями 0.1, 0.3 и 0.5
-	 * 
-	 * переход будет осуществлён в вершину 0.3
-	 * 
-	 * второй метод:
-	 * описывает распределение феромона на гранях
-	 * добавление феромона на грань между FROM в TO будет выполняться по следующему алгоритму
-	 * константа CONST делёная на длинну маршрута, пройденую муравьём при условии, что эта грань FROM TO
-	 * попала в маршрут муравья
-	 * CONST/path.length
+	 * heuristic method. it chose the next chunk to go
 	 */
 
 	private Optional<Chunk> whereToGo(Chunk from) {
+		/*
+		 * if free chunks is not exist, we can stop
+		 */
 		List<Chunk> freeAroundChunks = from.getFreeAroundChunks();
 		if (freeAroundChunks.size() < 1) {
 			if (printTestData) {
@@ -63,25 +133,52 @@ public class AntPathWorker implements Runnable {
 			// return null;
 		}
 		float INVERSE_DISTANCE_DIVIDER = 1f;
-		byte POW_COST = 1;
+		byte POW_COST = 3;
 		byte POW_INVERSE_DISTANCE = 1;
+		/*
+		 * edges to go container
+		 */
 		List<AntEdgeChoserContainer> antChanceContainer = new LinkedList<>();
+		/*
+		 * add to list every available edge to go
+		 */
 		freeAroundChunks.stream().forEach(e -> {
-			antChanceContainer.add(chanceToGoTo(INVERSE_DISTANCE_DIVIDER, POW_COST, POW_INVERSE_DISTANCE, from, e));
+			Optional<AntEdgeChoserContainer> chose = chanceToGoTo(INVERSE_DISTANCE_DIVIDER, POW_COST,
+					POW_INVERSE_DISTANCE, from, e);
+			if (chose.isPresent()) {
+				antChanceContainer.add(chose.get());
+			}
 		});
+
+		/*
+		 * compute sum of all wishes to go from container
+		 */
 		float chanceToAll = antChanceContainer.stream().map(e -> e.chanceToGoHere).reduce(0f, Float::sum);
+
+		/*
+		 * here we we equate the sum of all the chances to 1
+		 */
 
 		antChanceContainer.stream().forEach(e -> e.chanceToGoHere = e.chanceToGoHere / chanceToAll);
 
+		/*
+		 * sorting to simplify chose the next edge
+		 */
 		antChanceContainer.sort((o1, o2) -> Float.compare(o1.chanceToGoHere, o2.chanceToGoHere));
 
 		ThreadLocalRandom tlr = ThreadLocalRandom.current();
 		float random = tlr.nextFloat();
-		AntEdge resultEdge = closest(antChanceContainer, random).get().edge;
 
-		if (resultEdge != null) {
-			resultEdge.visited[0] = true;
+		/*
+		 * chose the next edge
+		 */
+		Optional<AntEdgeChoserContainer> antEdgeContainer = closest(antChanceContainer, random);
 
+		if (antEdgeContainer.isPresent()) {
+			AntEdge resultEdge = antEdgeContainer.get().antEdge;
+			/*
+			 * chose the next chunk from edge
+			 */
 			Chunk result = resultEdge.vertexOne == from ? resultEdge.vertexTwo : resultEdge.vertexOne;
 
 			if (printTestData) {
@@ -95,7 +192,7 @@ public class AntPathWorker implements Runnable {
 				AtomicReference<Float> f = new AtomicReference<>(0f);
 				antChanceContainer.stream().forEach(e -> {
 					float chance = e.chanceToGoHere;
-					AntEdge edg = e.edge;
+					AntEdge edg = e.antEdge;
 					System.out.print("chanceToGo: " + chance);
 					System.out.println(" curEdgfe: " + edg);
 					if (chance < 1f)
@@ -103,15 +200,15 @@ public class AntPathWorker implements Runnable {
 				});
 				System.out.println("sum of all chances: " + f.get() + ", sum of chances: " + chanceToAll);
 			}
+			/*
+			 * mark chunk result as visited
+			 */
+			// result.visited = true;
 			// return result;
-			return Optional.of(result);
-		} else if (antChanceContainer.size() > 0) {
-			AntEdge ae = antChanceContainer.get(antChanceContainer.size() - 1).edge;
-			Chunk result = ae.vertexOne == from ? ae.vertexTwo : ae.vertexOne;
-			// return result;
+			// System.out.println("SELECTED " + result);
 			return Optional.of(result);
 		} else {
-			return null;
+			return Optional.empty();
 		}
 
 	}
@@ -202,30 +299,30 @@ public class AntPathWorker implements Runnable {
 	/*
 	 * if @return value is null, then we can't continue path finding
 	 */
-	private AntEdgeChoserContainer chanceToGoTo(float INVERSE_DISTANCE_DIVIDER, byte POW_COST,
+	private Optional<AntEdgeChoserContainer> chanceToGoTo(float INVERSE_DISTANCE_DIVIDER, byte POW_COST,
 			byte POW_INVERSE_DISTANCE, Chunk from, Chunk to) {
 		AntEdge edge = null;
 		/*
 		 * find the same edge in two vertexes
 		 */
 		for (AntEdge _edge : from.edges) {
-			if (_edge.vertexOne == from && _edge.vertexTwo == to) {
+			if (_edge.vertexOne /* == */.equals(from) && _edge.vertexTwo.equals(/* == */ to)) {
 				edge = _edge;
 				break;
-			} else if (_edge.vertexOne == to && _edge.vertexTwo == from) {
+			} else if (_edge.vertexOne.equals(/* == */ to) && _edge.vertexTwo.equals/* == */(from)) {
 				edge = _edge;
 				break;
 			}
 		}
-		if (edge == null || edge.visited[0]) {
-			// return null;
+		if (edge == null) {
+			return Optional.empty();
 		}
 		float chance = (float) (Math.pow(edge.getTransitionCost(), POW_COST)
 				* Math.pow((INVERSE_DISTANCE_DIVIDER / edge.distanceBetweenVertexes()), POW_INVERSE_DISTANCE));
 		AntEdgeChoserContainer result = new AntEdgeChoserContainer();
-		result.edge = edge;
+		result.antEdge = edge;
 		result.chanceToGoHere = chance;
-		return result;
+		return Optional.of(result);
 	}
 
 	public void TEST() {
@@ -310,6 +407,18 @@ public class AntPathWorker implements Runnable {
 
 	}
 
+	/*
+	 * Selecting the closest value in range.
+	 * For example, we have list of chances with values
+	 * 0.1, 0.2, 0.4, 0.5 and random number 0.3.
+	 * We iterate through list and check that current number in list
+	 * less-or-equals random. If that, we save current iteration result to outer variable
+	 * and go next.
+	 * If current value is greater than random, we break loop.
+	 * If outer chance value is not changed (outer variable was set to Float.MAX_VALUE)
+	 * we just pick first value in chances list, because list was sorted
+	 * If list size less equals 0, we can't chose anything and just return empty/null value.
+	 */
 	private Optional<AntEdgeChoserContainer> closest(List<AntEdgeChoserContainer> chances, float random) {
 		if (chances.size() < 1) {
 			// return null;
@@ -318,12 +427,175 @@ public class AntPathWorker implements Runnable {
 		AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
 		AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
 
-		chances.stream().forEach(e -> {
-			if (e.chanceToGoHere <= random) {
-				result.set(e);
-				minChance.set(e.chanceToGoHere);
+		for (short i = 0; i < chances.size(); i++) {
+			if (chances.get(i).chanceToGoHere <= random) {
+				result.set(chances.get(i));
+				minChance.set(chances.get(i).chanceToGoHere);
+			} else {
+				break;
 			}
+		}
+
+		/*
+		 * chances.stream().forEach(e -> {
+		 * if (e.chanceToGoHere <= random) {
+		 * result.set(e);
+		 * minChance.set(e.chanceToGoHere);
+		 * }
+		 * });
+		 */
+		if (minChance.get() == Float.MAX_VALUE) {
+			result.set(chances.get(0));
+		}
+		// return result.get();
+		return Optional.of(result.get());
+	}
+
+	public void run_v2() {
+		createAdjacencyMatrix();
+		clearVisitedFlags();
+		List<List<Chunk>> allSequencesContainer = new LinkedList<>();
+
+		for (int i = 0; i < input.size(); i++) {
+			System.out.println("NEXT " + i);
+			List<Chunk> chunks = new LinkedList<>();
+			clearVisitedFlags();
+			chunks.add(input.get(i));
+			input.get(i).locked = true;
+			while (chunks.size() < input.size()) {
+				int nnext = whereToGo_v2(i);
+				if (nnext > -1) {
+					chunks.add(input.get(nnext));
+					input.get(nnext).locked = true;
+				} else {
+					break;
+				}
+			}
+			allSequencesContainer.add(chunks);
+		}
+		System.out.println("JOBA DONA, START SEARCH MIN LENGTH");
+		AtomicReference<Float> minLength = new AtomicReference<>(Float.MAX_VALUE);
+		allSequencesContainer.stream().forEach(e -> {
+			AtomicReference<Float> curLength = new AtomicReference<>(0f);
+			Chunk a = e.get(0);
+			e.stream().skip(1).forEach(ee -> {
+				curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.chunkPosition));
+			});
+			if (curLength.get() <= minLength.get()) {
+				minLength.set(curLength.get());
+				result = e;
+			}
+			System.out.println("CUR: " + curLength.get());
 		});
+		System.out.println("MIN :" + minLength.get());
+
+	}
+
+	private void createAdjacencyMatrix() {
+		for (int i = 0, size = input.size(); i < matrix.length; i++) {
+			matrix[i] = new DataHolder[size--];
+		}
+		int index = 0;
+		for (int i = 0; i < matrix.length; i++) {
+			Chunk vertexOne = input.get(i);
+			for (int j = 0; j < matrix[i].length; j++) {
+				int q = j + i;
+				Chunk vertexTwo = input.get(q);
+				DataHolder holder = new DataHolder();
+				holder.index = index++;
+				holder.h = i;
+				holder.w = q;
+				holder.distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
+				matrix[i][j] = holder;
+			}
+		}
+		try {
+			Files.deleteIfExists(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"));
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < matrix.length; i++) {
+				sb.append(Arrays.toString(matrix[i]) + "\n");
+			}
+			Files.write(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"), sb.toString().getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private int whereToGo_v2(int height) {
+		Chunk from = input.get(height);
+		from.locked = true;
+		short powCost = 1;
+		short powDistance = 2;
+		float distanceDivider = 1f;
+		DataHolder[] edg = matrix[height];
+		List<DataHolder> edgesHolderContainer = new LinkedList<>();
+		int _height = height - 1;
+		int _width = 1;
+		while (_height > -1) {
+			DataHolder data = matrix[_height][_width];
+			if (input.get(data.h).locked) {
+				_height--;
+				_width++;
+				continue;
+			}
+			_height--;
+			_width++;
+			edgesHolderContainer.add(data);
+		}
+		for (int i = 1; i < edg.length; i++) {
+			if (!input.get(edg[i].w).locked)
+				edgesHolderContainer.add(edg[i]);
+		}
+
+		List<AntEdgeChoserContainer> choser = new LinkedList<>();
+		edgesHolderContainer.stream().forEach(e -> {
+			AntEdgeChoserContainer aecc = new AntEdgeChoserContainer();
+			aecc.dataHolderEdge = e;
+			aecc.chanceToGoHere = (float) (Math.pow(e.transitionCost, powCost)
+					* (Math.pow(/* distanceDivider / */e.distance, powDistance)));
+			choser.add(aecc);
+		});
+		float chanceToAll = choser.stream().map(e -> e.chanceToGoHere).reduce(0f, Float::sum);
+		choser.stream().forEach(e -> e.chanceToGoHere = e.chanceToGoHere / chanceToAll);
+
+		choser.sort((o1, o2) -> Float.compare(o1.chanceToGoHere, o2.chanceToGoHere));
+
+		ThreadLocalRandom tlr = ThreadLocalRandom.current();
+		float rnd = tlr.nextFloat();
+
+		Optional<AntEdgeChoserContainer> res = closest_v2(choser, rnd);
+
+		if (res.isPresent()) {
+			AntEdgeChoserContainer chosedAECC = res.get();
+			DataHolder chosedDH = chosedAECC.dataHolderEdge;
+			int where = chosedDH.h == height ? chosedDH.w : chosedDH.h;
+			Chunk result = input.get(where);
+			result.locked = true;
+			return where;
+		}
+
+		return -1;
+
+	}
+
+	private Optional<AntEdgeChoserContainer> closest_v2(List<AntEdgeChoserContainer> chances, float random) {
+		if (chances.size() < 1) {
+			// return null;
+			return Optional.empty();
+		}
+		AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
+		AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
+
+		for (short i = 0; i < chances.size(); i++) {
+			if (chances.get(i).chanceToGoHere <= random) {
+				result.set(chances.get(i));
+				minChance.set(chances.get(i).chanceToGoHere);
+			} else {
+				break;
+			}
+		}
+
 		if (minChance.get() == Float.MAX_VALUE) {
 			result.set(chances.get(0));
 		}

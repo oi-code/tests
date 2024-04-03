@@ -1,22 +1,15 @@
 package ImageConvertor.core;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import ImageConvertor.data.Chunk;
-import ImageConvertor.views.desktop.View;
 
 public class AntPathWorkerManager implements Pathfinder {
 
@@ -59,7 +52,7 @@ public class AntPathWorkerManager implements Pathfinder {
 	}
 
 	@Override
-	public List<List<Chunk>> getSequencesOfPaths() {
+	public List<List<Chunk>> getSequencesOfClouds() {
 
 		List<Set<Chunk>> clouds = createClouds();
 
@@ -67,13 +60,24 @@ public class AntPathWorkerManager implements Pathfinder {
 		for (Set<Chunk> s : clouds) {
 			result.add(new ArrayList<>(s));
 		}
-		controller.setPathsPointList(result);
+		List<List<Chunk>> rr = new LinkedList<>();
+		result.stream().forEach(e -> {
+			AntPathWorker worker = new AntPathWorker(e);
+			// worker.run();
+			worker.run_v2();
+
+			if (worker.getResult().size() > 0) {
+				rr.add(worker.getResult());
+			}
+		});
+		controller.setPathsPointList(rr);
+		// controller.setPathsPointList(result);
 		return result;
 	}
 
 	private List<Set<Chunk>> createClouds() {
 		chunkMatrix = createOneLayerFromAllLayers();
-		List<Set<Chunk>> clouds = getCloudOfChunks(/*Integer.MAX_VALUE*/20);
+		List<Set<Chunk>> clouds = getCloudOfChunks(/* Integer.MAX_VALUE */20);
 		return clouds;
 	}
 
@@ -138,7 +142,7 @@ public class AntPathWorkerManager implements Pathfinder {
 
 		result.add(seed);
 		seed.locked = true;
-		/* after adding seed to result set, we can start compute cloud */
+		/* after adding seed to result set, start compute cloud */
 		createCloud(result, cloudIndex);
 		return result;
 	}
@@ -148,7 +152,7 @@ public class AntPathWorkerManager implements Pathfinder {
 
 		Set<Chunk> check = new HashSet<>();
 		Set<Chunk> buffer = new HashSet<>();
-		/* here we trying to find free chunks around every chunk */
+		/* trying to find free chunks around every chunk */
 		input.stream().forEach(element -> {
 			setAroundChunks(element);
 			List<Chunk> freeChunks = element.getFreeAroundChunks();
@@ -206,6 +210,9 @@ public class AntPathWorkerManager implements Pathfinder {
 	 */
 	private void setAroundChunks(Chunk seed) {
 		// Set<Chunk> aroundChunks = new HashSet<>();
+		/*
+		 * if current seed around chunks already has set, stop running
+		 */
 		if (seed.avalivableChunks.size() != 0) {
 			return;
 		}
@@ -229,6 +236,9 @@ public class AntPathWorkerManager implements Pathfinder {
 		}
 	}
 
+	/*
+	 * check bounds to avoid {@link java.lang.ArrayIndexOutOfBoundsException}
+	 */
 	private boolean checkBound(short widthPosition, short heightPosition) {
 		return widthPosition >= 0 && widthPosition < chunkMatrix[0].length && heightPosition >= 0
 				&& heightPosition < chunkMatrix.length;
@@ -237,7 +247,6 @@ public class AntPathWorkerManager implements Pathfinder {
 
 	/*
 	 * get indexes around seed taking into account the distance(multiplier) between chunks
-	 * method don't check any matrix's boundaries
 	 */
 	private List<short[]> getAroundIndexes(Chunk seed, int rangeBetweenChunks) {
 
