@@ -456,6 +456,13 @@ public class AntPathWorker implements Runnable {
 		clearVisitedFlags();
 		List<List<Chunk>> allSequencesContainer = new LinkedList<>();
 
+		/*
+		 * Chunk first=input.get(22);
+		 * int _next=whereToGo_v2(22);
+		 * Chunk next=input.get(_next);
+		 * System.out.println(first+"\n"+next);
+		 */
+
 		for (int i = 0; i < input.size(); i++) {
 			System.out.println("NEXT " + i);
 			List<Chunk> chunks = new LinkedList<>();
@@ -526,7 +533,7 @@ public class AntPathWorker implements Runnable {
 		Chunk from = input.get(height);
 		from.locked = true;
 		short powCost = 1;
-		short powDistance = 2;
+		short powDistance = 5;
 		float distanceDivider = 1f;
 		DataHolder[] edg = matrix[height];
 		List<DataHolder> edgesHolderContainer = new LinkedList<>();
@@ -534,14 +541,11 @@ public class AntPathWorker implements Runnable {
 		int _width = 1;
 		while (_height > -1) {
 			DataHolder data = matrix[_height][_width];
-			if (input.get(data.h).locked) {
-				_height--;
-				_width++;
-				continue;
+			if (!input.get(data.h).locked) {
+				edgesHolderContainer.add(data);
 			}
 			_height--;
 			_width++;
-			edgesHolderContainer.add(data);
 		}
 		for (int i = 1; i < edg.length; i++) {
 			if (!input.get(edg[i].w).locked)
@@ -553,7 +557,7 @@ public class AntPathWorker implements Runnable {
 			AntEdgeChoserContainer aecc = new AntEdgeChoserContainer();
 			aecc.dataHolderEdge = e;
 			aecc.chanceToGoHere = (float) (Math.pow(e.transitionCost, powCost)
-					* (Math.pow(/* distanceDivider / */e.distance, powDistance)));
+					* (Math.pow(distanceDivider / e.distance, powDistance)));
 			choser.add(aecc);
 		});
 		float chanceToAll = choser.stream().map(e -> e.chanceToGoHere).reduce(0f, Float::sum);
