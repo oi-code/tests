@@ -43,7 +43,7 @@ public class Controller {
 		try {
 			// InputStream is = new FileInputStream("locale\\" + defLoc + ".properties");
 			// InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
-			InputStream is = State.class.getResourceAsStream("l18n/" + defLoc + ".properties");
+			InputStream is = State.class.getResourceAsStream("i18n/" + defLoc + ".properties");
 			InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
 			prop.load(isr);
 			STATE.setLocale(prop);
