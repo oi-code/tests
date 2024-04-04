@@ -21,11 +21,11 @@ import ImageConvertor.views.desktop.View;
 public class AntPathWorker implements Runnable {
 
 	public class DataHolder {
-		public int index;
 		public float distance;
 		public float transitionCost = 0.5f;
 		public int h;
 		public int w;
+		public Chunk where;
 
 		@Override
 		public int hashCode() {
@@ -55,7 +55,7 @@ public class AntPathWorker implements Runnable {
 
 		@Override
 		public String toString() {
-			return h + "." + w + " ";
+			return h + ":" + w + " ";
 		}
 
 		private AntPathWorker getEnclosingInstance() {
@@ -454,7 +454,7 @@ public class AntPathWorker implements Runnable {
 	public void run_v2() {
 		createAdjacencyMatrix();
 		clearVisitedFlags();
-		List<List<Chunk>> allSequencesContainer = new LinkedList<>();
+		List<List<DataHolder>> allSequencesContainer = new LinkedList<>();
 
 		/*
 		 * Chunk first=input.get(22);
@@ -463,38 +463,63 @@ public class AntPathWorker implements Runnable {
 		 * System.out.println(first+"\n"+next);
 		 */
 
-		for (int i = 0; i < input.size(); i++) {
-			System.out.println("NEXT " + i);
-			List<Chunk> chunks = new LinkedList<>();
-			clearVisitedFlags();
-			chunks.add(input.get(i));
-			input.get(i).locked = true;
-			while (chunks.size() < input.size()) {
-				int nnext = whereToGo_v2(i);
-				if (nnext > -1) {
-					chunks.add(input.get(nnext));
-					input.get(nnext).locked = true;
-				} else {
-					break;
+		System.out.println(input.size()+" INPUT");
+		int iterations = 0;
+		while (iterations < 1) {
+			allSequencesContainer.clear();
+			iterations++;
+			System.out.println("next iteration " + iterations);
+			for (int i = 0; i < input.size(); i++) {
+				clearVisitedFlags();
+				System.out.println("NEXT " + i);
+				List<DataHolder> chunks = new LinkedList<>();
+				DataHolder first=matrix[i][0];
+				first.where=input.get(i);
+				first.where.locked=true;
+				chunks.add(first);
+				while (chunks.size() < input.size()) {
+					Optional<DataHolder> nnext = whereToGo_v2(i);
+					if (nnext.isPresent()) {
+						chunks.add(nnext.get());
+						nnext.get().where.locked = true;
+					} else {
+						break;
+					}
 				}
+				allSequencesContainer.add(chunks);
 			}
-			allSequencesContainer.add(chunks);
+			System.out.println("update matrix");
+			updateMatrix(allSequencesContainer);
 		}
-		System.out.println("JOBA DONA, START SEARCH MIN LENGTH");
-		AtomicReference<Float> minLength = new AtomicReference<>(Float.MAX_VALUE);
-		allSequencesContainer.stream().forEach(e -> {
-			AtomicReference<Float> curLength = new AtomicReference<>(0f);
-			Chunk a = e.get(0);
-			e.stream().skip(1).forEach(ee -> {
-				curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.chunkPosition));
-			});
-			if (curLength.get() <= minLength.get()) {
-				minLength.set(curLength.get());
-				result = e;
+		AtomicReference<List<DataHolder>> cont = new AtomicReference<>();
+		AtomicReference<Float> min = new AtomicReference<>(Float.MAX_VALUE);
+		allSequencesContainer.stream().forEach(dataHolders -> {
+			float currentSequenceLength = dataHolders.stream().map(data -> data.distance).reduce(0f, Float::sum);
+			if (currentSequenceLength < min.get()) {
+				min.set(currentSequenceLength);
+				cont.set(dataHolders);
 			}
-			System.out.println("CUR: " + curLength.get());
 		});
-		System.out.println("MIN :" + minLength.get());
+		result = cont.get().stream().map(data -> data.where).toList();
+
+		/*
+		 * System.out.println("JOBA DONA, START SEARCH MIN LENGTH");
+		 * AtomicReference<Float> minLength = new AtomicReference<>(Float.MAX_VALUE);
+		 * allSequencesContainer.stream().forEach(e -> {
+		 * AtomicReference<Float> curLength = new AtomicReference<>(0f);
+		 * //Chunk a = e.get(0).where;
+		 * e.stream().skip(1).forEach(ee -> {
+		 * //curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
+		 * curLength.set(curLength.get()+ee.distance);
+		 * });
+		 * if (curLength.get() <= minLength.get()) {
+		 * minLength.set(curLength.get());
+		 * result = e.stream().map(dataHolder -> dataHolder.where).toList();
+		 * }
+		 * System.out.println("CUR: " + curLength.get());
+		 * });
+		 * System.out.println("MIN :" + minLength.get());
+		 */
 
 	}
 
@@ -502,17 +527,16 @@ public class AntPathWorker implements Runnable {
 		for (int i = 0, size = input.size(); i < matrix.length; i++) {
 			matrix[i] = new DataHolder[size--];
 		}
-		int index = 0;
 		for (int i = 0; i < matrix.length; i++) {
 			Chunk vertexOne = input.get(i);
 			for (int j = 0; j < matrix[i].length; j++) {
 				int q = j + i;
 				Chunk vertexTwo = input.get(q);
 				DataHolder holder = new DataHolder();
-				holder.index = index++;
 				holder.h = i;
 				holder.w = q;
-				holder.distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
+				//holder.distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
+				holder.distance = (float) vertexOne.endPoint.distance(vertexTwo.startPoint);
 				matrix[i][j] = holder;
 			}
 		}
@@ -529,12 +553,12 @@ public class AntPathWorker implements Runnable {
 
 	}
 
-	private int whereToGo_v2(int height) {
+	private Optional<DataHolder> whereToGo_v2(int height) {
 		Chunk from = input.get(height);
 		from.locked = true;
 		short powCost = 1;
-		short powDistance = 5;
-		float distanceDivider = 1f;
+		short powDistance = 2;
+		float distanceDivider = 10f;
 		DataHolder[] edg = matrix[height];
 		List<DataHolder> edgesHolderContainer = new LinkedList<>();
 		int _height = height - 1;
@@ -576,10 +600,11 @@ public class AntPathWorker implements Runnable {
 			int where = chosedDH.h == height ? chosedDH.w : chosedDH.h;
 			Chunk result = input.get(where);
 			result.locked = true;
-			return where;
+			chosedDH.where = result;
+			return Optional.of(chosedDH);
 		}
 
-		return -1;
+		return Optional.empty();
 
 	}
 
@@ -605,6 +630,29 @@ public class AntPathWorker implements Runnable {
 		}
 		// return result.get();
 		return Optional.of(result.get());
+	}
+
+	private void updateMatrix(List<List<DataHolder>> allSequencesContainer) {
+		final int consta = 30;
+		// int pathLength = 2;
+		// int addition = consta / pathLength;
+		// int costOnNewIteration = (dataholder.transitionCost * vaporizeRatio) + addition;
+
+		Arrays.stream(matrix).forEach(e -> {
+			Arrays.stream(e).forEach(ee -> {
+				ee.transitionCost = ee.transitionCost * 0.6f;
+			});
+		});
+		allSequencesContainer.stream().forEach(dataHolders -> {
+			AtomicReference<Float> curLength = new AtomicReference<>(0f);
+			Chunk a = dataHolders.get(0).where;
+			dataHolders.stream().skip(1).forEach(ee -> {
+				curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
+			});
+			dataHolders.stream().forEach(data -> {
+				data.transitionCost = consta / curLength.get();
+			});
+		});
 	}
 
 }
