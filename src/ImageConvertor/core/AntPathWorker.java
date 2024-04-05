@@ -20,53 +20,55 @@ import ImageConvertor.views.desktop.View;
 
 public class AntPathWorker implements Runnable {
 
-	public class DataHolder {
-		public float distance;
-		public float transitionCost = 0.5f;
-		public int h;
-		public int w;
-		public Chunk where;
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getEnclosingInstance().hashCode();
-			result = prime * result + Objects.hash(h, w);
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			DataHolder other = (DataHolder) obj;
-			if (this.w == other.w && this.h == other.h) {
-				return true;
-			} else if (this.w == other.h && this.h == other.w) {
-				return true;
-			}
-			return false;
-		}
-
-		@Override
-		public String toString() {
-			return h + ":" + w + " ";
-		}
-
-		private AntPathWorker getEnclosingInstance() {
-			return AntPathWorker.this;
-		}
-	}
+	/*
+	 * public class DataHolder {
+	 * public float distance;
+	 * public float transitionCost = 0.5f;
+	 * public int h;
+	 * public int w;
+	 * public Chunk where;
+	 * 
+	 * @Override
+	 * public int hashCode() {
+	 * final int prime = 31;
+	 * int result = 1;
+	 * result = prime * result + getEnclosingInstance().hashCode();
+	 * result = prime * result + Objects.hash(h, w);
+	 * return result;
+	 * }
+	 * 
+	 * @Override
+	 * public boolean equals(Object obj) {
+	 * if (this == obj)
+	 * return true;
+	 * if (obj == null)
+	 * return false;
+	 * if (getClass() != obj.getClass())
+	 * return false;
+	 * DataHolder other = (DataHolder) obj;
+	 * if (this.w == other.w && this.h == other.h) {
+	 * return true;
+	 * } else if (this.w == other.h && this.h == other.w) {
+	 * return true;
+	 * }
+	 * return false;
+	 * }
+	 * 
+	 * @Override
+	 * public String toString() {
+	 * return h + ":" + w + " ";
+	 * }
+	 * 
+	 * private AntPathWorker getEnclosingInstance() {
+	 * return AntPathWorker.this;
+	 * }
+	 * }
+	 */
 
 	private boolean printTestData;
 	private List<List<Chunk>> result;
 	private List<Chunk> input;
-	private DataHolder[][] matrix;
+	// private DataHolder[][] matrix;
 
 	public AntPathWorker() {
 	}
@@ -74,7 +76,7 @@ public class AntPathWorker implements Runnable {
 	public AntPathWorker(List<Chunk> input) {
 		result = new ArrayList<>();
 		this.input = input;
-		matrix = new DataHolder[input.size()][];
+		// matrix = new DataHolder[input.size()][];
 		clearVisitedFlags();
 	}
 
@@ -461,7 +463,8 @@ public class AntPathWorker implements Runnable {
 
 	}
 
-	// fucking shit below doesn't work even in test data. I think its the same as in {@link PathWorkerManager}
+	// fucking shit below doesn't work even in test data. I think its the same as in {@link
+	// PathWorkerManager}
 	// how its happened LUL. it was written 2 in 2022, but this was written in 2024
 
 	/*
