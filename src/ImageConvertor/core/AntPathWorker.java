@@ -64,7 +64,7 @@ public class AntPathWorker implements Runnable {
 	}
 
 	private boolean printTestData;
-	private List<Chunk> result;
+	private List<List<Chunk>> result;
 	private List<Chunk> input;
 	private DataHolder[][] matrix;
 
@@ -84,6 +84,9 @@ public class AntPathWorker implements Runnable {
 		List<List<Chunk>> cont = new LinkedList<>();
 
 		for (Chunk startSeed : input) {
+			if (startSeed.notAvalivable)
+				continue;
+			clearVisitedFlags();
 			List<Chunk> currentSequence = new LinkedList<>();
 			startSeed.locked = true;
 			currentSequence.add(startSeed);
@@ -96,19 +99,26 @@ public class AntPathWorker implements Runnable {
 					currentSequence.add(nextChunk);
 					current = nextChunk;
 				} else {
+					// System.out.println("ERROR " + currentSequence.size() + "<->" + input.size());
 					break;
 				}
 			}
-			clearVisitedFlags();
 			cont.add(currentSequence);
 		}
 		List<Chunk> rs = cont.stream().max((o1, o2) -> Integer.compare(o1.size(), o2.size())).get();
+		rs.forEach(Chunk::notAvalivable);
 		// Set<Chunk> hash = new HashSet<>(rs);
 		// System.out.println(rs.size() + " " + hash.size());
-		result.addAll(rs);
+		int sum = input.stream().filter(e -> !e.notAvalivable).map(e -> 1).reduce(0, Integer::sum);
+		System.out.println("free: " + sum + ", total: " + input.size());
+		result.add(rs);
+		if (sum > 0) {
+			System.out.println("RUNNED AGAIN");
+			run();
+		}
 	}
 
-	public List<Chunk> getResult() {
+	public List<List<Chunk>> getResult() {
 		return result;
 	}
 
@@ -133,8 +143,8 @@ public class AntPathWorker implements Runnable {
 			// return null;
 		}
 		float INVERSE_DISTANCE_DIVIDER = 1f;
-		byte POW_COST = 3;
-		byte POW_INVERSE_DISTANCE = 1;
+		byte POW_COST = 1;
+		byte POW_INVERSE_DISTANCE = 3;
 		/*
 		 * edges to go container
 		 */
@@ -325,12 +335,56 @@ public class AntPathWorker implements Runnable {
 		return Optional.of(result);
 	}
 
+	/*
+	 * Selecting the closest value in range.
+	 * For example, we have list of chances with values
+	 * 0.1, 0.2, 0.4, 0.5 and random number 0.3.
+	 * We iterate through list and check that current number in list
+	 * less-or-equals random. If that, we save current iteration result to outer variable
+	 * and go next.
+	 * If current value is greater than random, we break loop.
+	 * If outer chance value is not changed (outer variable was set to Float.MAX_VALUE)
+	 * we just pick first value in chances list, because list was sorted
+	 * If list size less equals 0, we can't chose anything and just return empty/null value.
+	 */
+	private Optional<AntEdgeChoserContainer> closest(List<AntEdgeChoserContainer> chances, float random) {
+		if (chances.size() < 1) {
+			// return null;
+			return Optional.empty();
+		}
+		AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
+		AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
+
+		for (short i = 0; i < chances.size(); i++) {
+			if (chances.get(i).chanceToGoHere <= random) {
+				result.set(chances.get(i));
+				minChance.set(chances.get(i).chanceToGoHere);
+			} else {
+				break;
+			}
+		}
+
+		/*
+		 * chances.stream().forEach(e -> {
+		 * if (e.chanceToGoHere <= random) {
+		 * result.set(e);
+		 * minChance.set(e.chanceToGoHere);
+		 * }
+		 * });
+		 */
+		if (minChance.get() == Float.MAX_VALUE) {
+			result.set(chances.get(0));
+		}
+		// return result.get();
+		return Optional.of(result.get());
+	}
+
 	public void TEST() {
 
 		printTestData = true;
 
 		Chunk seed = new Chunk((short) 2, (short) 2);
-		seed.visited = true;
+		seed.notAvalivable = true;
 		seed.locked = true;
 
 		Chunk a1 = new Chunk((short) 1, (short) 1);
@@ -407,252 +461,216 @@ public class AntPathWorker implements Runnable {
 
 	}
 
+	// fucking shit below doesn't work even in test data. I think its the same as in {@link PathWorkerManager}
+	// how its happened LUL. it was written 2 in 2022, but this was written in 2024
+
 	/*
-	 * Selecting the closest value in range.
-	 * For example, we have list of chances with values
-	 * 0.1, 0.2, 0.4, 0.5 and random number 0.3.
-	 * We iterate through list and check that current number in list
-	 * less-or-equals random. If that, we save current iteration result to outer variable
-	 * and go next.
-	 * If current value is greater than random, we break loop.
-	 * If outer chance value is not changed (outer variable was set to Float.MAX_VALUE)
-	 * we just pick first value in chances list, because list was sorted
-	 * If list size less equals 0, we can't chose anything and just return empty/null value.
+	 * public void run_v2() {
+	 * createAdjacencyMatrix();
+	 * clearVisitedFlags();
+	 * List<List<DataHolder>> allSequencesContainer = new LinkedList<>();
+	 * 
+	 * /*
+	 * Chunk first=input.get(22);
+	 * int _next=whereToGo_v2(22);
+	 * Chunk next=input.get(_next);
+	 * System.out.println(first+"\n"+next);
+	 *
+	 * 
+	 * System.out.println(input.size() + " INPUT");
+	 * int iterations = 0;
+	 * while (iterations < 1) {
+	 * allSequencesContainer.clear();
+	 * iterations++;
+	 * System.out.println("next iteration " + iterations);
+	 * for (int i = 0; i < input.size(); i++) {
+	 * clearVisitedFlags();
+	 * System.out.println("NEXT " + i);
+	 * List<DataHolder> chunks = new LinkedList<>();
+	 * DataHolder first = matrix[i][0];
+	 * first.where = input.get(i);
+	 * first.where.locked = true;
+	 * chunks.add(first);
+	 * while (chunks.size() < input.size()) {
+	 * Optional<DataHolder> nnext = whereToGo_v2(i);
+	 * if (nnext.isPresent()) {
+	 * chunks.add(nnext.get());
+	 * nnext.get().where.locked = true;
+	 * } else {
+	 * break;
+	 * }
+	 * }
+	 * allSequencesContainer.add(chunks);
+	 * }
+	 * System.out.println("update matrix");
+	 * updateMatrix(allSequencesContainer);
+	 * }
+	 * AtomicReference<List<DataHolder>> cont = new AtomicReference<>();
+	 * AtomicReference<Float> min = new AtomicReference<>(Float.MAX_VALUE);
+	 * allSequencesContainer.stream().forEach(dataHolders -> {
+	 * float currentSequenceLength = dataHolders.stream().map(data -> data.distance).reduce(0f,
+	 * Float::sum);
+	 * if (currentSequenceLength < min.get()) {
+	 * min.set(currentSequenceLength);
+	 * cont.set(dataHolders);
+	 * }
+	 * });
+	 * result = cont.get().stream().map(data -> data.where).toList();
+	 * 
+	 * /*
+	 * System.out.println("JOBA DONA, START SEARCH MIN LENGTH");
+	 * AtomicReference<Float> minLength = new AtomicReference<>(Float.MAX_VALUE);
+	 * allSequencesContainer.stream().forEach(e -> {
+	 * AtomicReference<Float> curLength = new AtomicReference<>(0f);
+	 * //Chunk a = e.get(0).where;
+	 * e.stream().skip(1).forEach(ee -> {
+	 * //curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
+	 * curLength.set(curLength.get()+ee.distance);
+	 * });
+	 * if (curLength.get() <= minLength.get()) {
+	 * minLength.set(curLength.get());
+	 * result = e.stream().map(dataHolder -> dataHolder.where).toList();
+	 * }
+	 * System.out.println("CUR: " + curLength.get());
+	 * });
+	 * System.out.println("MIN :" + minLength.get());
+	 *
+	 * 
+	 * }
+	 * 
+	 * private void createAdjacencyMatrix() {
+	 * for (int i = 0, size = input.size(); i < matrix.length; i++) {
+	 * matrix[i] = new DataHolder[size--];
+	 * }
+	 * for (int i = 0; i < matrix.length; i++) {
+	 * Chunk vertexOne = input.get(i);
+	 * for (int j = 0; j < matrix[i].length; j++) {
+	 * int q = j + i;
+	 * Chunk vertexTwo = input.get(q);
+	 * DataHolder holder = new DataHolder();
+	 * holder.h = i;
+	 * holder.w = q;
+	 * // holder.distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
+	 * holder.distance = (float) vertexOne.endPoint.distance(vertexTwo.startPoint);
+	 * matrix[i][j] = holder;
+	 * }
+	 * }
+	 * try {
+	 * Files.deleteIfExists(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"));
+	 * StringBuilder sb = new StringBuilder();
+	 * for (int i = 0; i < matrix.length; i++) {
+	 * sb.append(Arrays.toString(matrix[i]) + "\n");
+	 * }
+	 * Files.write(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"),
+	 * sb.toString().getBytes());
+	 * } catch (IOException e) {
+	 * e.printStackTrace();
+	 * }
+	 * 
+	 * }
+	 * 
+	 * private Optional<DataHolder> whereToGo_v2(int height) {
+	 * Chunk from = input.get(height);
+	 * from.locked = true;
+	 * short powCost = 1;
+	 * short powDistance = 2;
+	 * float distanceDivider = 10f;
+	 * DataHolder[] edg = matrix[height];
+	 * List<DataHolder> edgesHolderContainer = new LinkedList<>();
+	 * int _height = height - 1;
+	 * int _width = 1;
+	 * while (_height > -1) {
+	 * DataHolder data = matrix[_height][_width];
+	 * if (!input.get(data.h).locked) {
+	 * edgesHolderContainer.add(data);
+	 * }
+	 * _height--;
+	 * _width++;
+	 * }
+	 * for (int i = 1; i < edg.length; i++) {
+	 * if (!input.get(edg[i].w).locked)
+	 * edgesHolderContainer.add(edg[i]);
+	 * }
+	 * 
+	 * List<AntEdgeChoserContainer> choser = new LinkedList<>();
+	 * edgesHolderContainer.stream().forEach(e -> {
+	 * AntEdgeChoserContainer aecc = new AntEdgeChoserContainer();
+	 * aecc.dataHolderEdge = e;
+	 * aecc.chanceToGoHere = (float) (Math.pow(e.transitionCost, powCost)
+	 * (Math.pow(distanceDivider / e.distance, powDistance)));
+	 * choser.add(aecc);
+	 * });
+	 * float chanceToAll = choser.stream().map(e -> e.chanceToGoHere).reduce(0f, Float::sum);
+	 * choser.stream().forEach(e -> e.chanceToGoHere = e.chanceToGoHere / chanceToAll);
+	 * 
+	 * choser.sort((o1, o2) -> Float.compare(o1.chanceToGoHere, o2.chanceToGoHere));
+	 * 
+	 * ThreadLocalRandom tlr = ThreadLocalRandom.current();
+	 * float rnd = tlr.nextFloat();
+	 * 
+	 * Optional<AntEdgeChoserContainer> res = closest_v2(choser, rnd);
+	 * 
+	 * if (res.isPresent()) {
+	 * AntEdgeChoserContainer chosedAECC = res.get();
+	 * DataHolder chosedDH = chosedAECC.dataHolderEdge;
+	 * int where = chosedDH.h == height ? chosedDH.w : chosedDH.h;
+	 * Chunk result = input.get(where);
+	 * result.locked = true;
+	 * chosedDH.where = result;
+	 * return Optional.of(chosedDH);
+	 * }
+	 * 
+	 * return Optional.empty();
+	 * 
+	 * }
+	 * 
+	 * private Optional<AntEdgeChoserContainer> closest_v2(List<AntEdgeChoserContainer> chances, float
+	 * random) {
+	 * if (chances.size() < 1) {
+	 * // return null;
+	 * return Optional.empty();
+	 * }
+	 * AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
+	 * AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
+	 * 
+	 * for (short i = 0; i < chances.size(); i++) {
+	 * if (chances.get(i).chanceToGoHere <= random) {
+	 * result.set(chances.get(i));
+	 * minChance.set(chances.get(i).chanceToGoHere);
+	 * } else {
+	 * break;
+	 * }
+	 * }
+	 * 
+	 * if (minChance.get() == Float.MAX_VALUE) {
+	 * result.set(chances.get(0));
+	 * }
+	 * // return result.get();
+	 * return Optional.of(result.get());
+	 * }
+	 * 
+	 * private void updateMatrix(List<List<DataHolder>> allSequencesContainer) {
+	 * final int consta = 30;
+	 * // int pathLength = 2;
+	 * // int addition = consta / pathLength;
+	 * // int costOnNewIteration = (dataholder.transitionCost * vaporizeRatio) + addition;
+	 * 
+	 * Arrays.stream(matrix).forEach(e -> {
+	 * Arrays.stream(e).forEach(ee -> {
+	 * ee.transitionCost = ee.transitionCost * 0.6f;
+	 * });
+	 * });
+	 * allSequencesContainer.stream().forEach(dataHolders -> {
+	 * AtomicReference<Float> curLength = new AtomicReference<>(0f);
+	 * Chunk a = dataHolders.get(0).where;
+	 * dataHolders.stream().skip(1).forEach(ee -> {
+	 * curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
+	 * });
+	 * dataHolders.stream().forEach(data -> {
+	 * data.transitionCost = consta / curLength.get();
+	 * });
+	 * });
+	 * }
 	 */
-	private Optional<AntEdgeChoserContainer> closest(List<AntEdgeChoserContainer> chances, float random) {
-		if (chances.size() < 1) {
-			// return null;
-			return Optional.empty();
-		}
-		AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
-		AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
-
-		for (short i = 0; i < chances.size(); i++) {
-			if (chances.get(i).chanceToGoHere <= random) {
-				result.set(chances.get(i));
-				minChance.set(chances.get(i).chanceToGoHere);
-			} else {
-				break;
-			}
-		}
-
-		/*
-		 * chances.stream().forEach(e -> {
-		 * if (e.chanceToGoHere <= random) {
-		 * result.set(e);
-		 * minChance.set(e.chanceToGoHere);
-		 * }
-		 * });
-		 */
-		if (minChance.get() == Float.MAX_VALUE) {
-			result.set(chances.get(0));
-		}
-		// return result.get();
-		return Optional.of(result.get());
-	}
-
-	public void run_v2() {
-		createAdjacencyMatrix();
-		clearVisitedFlags();
-		List<List<DataHolder>> allSequencesContainer = new LinkedList<>();
-
-		/*
-		 * Chunk first=input.get(22);
-		 * int _next=whereToGo_v2(22);
-		 * Chunk next=input.get(_next);
-		 * System.out.println(first+"\n"+next);
-		 */
-
-		System.out.println(input.size()+" INPUT");
-		int iterations = 0;
-		while (iterations < 1) {
-			allSequencesContainer.clear();
-			iterations++;
-			System.out.println("next iteration " + iterations);
-			for (int i = 0; i < input.size(); i++) {
-				clearVisitedFlags();
-				System.out.println("NEXT " + i);
-				List<DataHolder> chunks = new LinkedList<>();
-				DataHolder first=matrix[i][0];
-				first.where=input.get(i);
-				first.where.locked=true;
-				chunks.add(first);
-				while (chunks.size() < input.size()) {
-					Optional<DataHolder> nnext = whereToGo_v2(i);
-					if (nnext.isPresent()) {
-						chunks.add(nnext.get());
-						nnext.get().where.locked = true;
-					} else {
-						break;
-					}
-				}
-				allSequencesContainer.add(chunks);
-			}
-			System.out.println("update matrix");
-			updateMatrix(allSequencesContainer);
-		}
-		AtomicReference<List<DataHolder>> cont = new AtomicReference<>();
-		AtomicReference<Float> min = new AtomicReference<>(Float.MAX_VALUE);
-		allSequencesContainer.stream().forEach(dataHolders -> {
-			float currentSequenceLength = dataHolders.stream().map(data -> data.distance).reduce(0f, Float::sum);
-			if (currentSequenceLength < min.get()) {
-				min.set(currentSequenceLength);
-				cont.set(dataHolders);
-			}
-		});
-		result = cont.get().stream().map(data -> data.where).toList();
-
-		/*
-		 * System.out.println("JOBA DONA, START SEARCH MIN LENGTH");
-		 * AtomicReference<Float> minLength = new AtomicReference<>(Float.MAX_VALUE);
-		 * allSequencesContainer.stream().forEach(e -> {
-		 * AtomicReference<Float> curLength = new AtomicReference<>(0f);
-		 * //Chunk a = e.get(0).where;
-		 * e.stream().skip(1).forEach(ee -> {
-		 * //curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
-		 * curLength.set(curLength.get()+ee.distance);
-		 * });
-		 * if (curLength.get() <= minLength.get()) {
-		 * minLength.set(curLength.get());
-		 * result = e.stream().map(dataHolder -> dataHolder.where).toList();
-		 * }
-		 * System.out.println("CUR: " + curLength.get());
-		 * });
-		 * System.out.println("MIN :" + minLength.get());
-		 */
-
-	}
-
-	private void createAdjacencyMatrix() {
-		for (int i = 0, size = input.size(); i < matrix.length; i++) {
-			matrix[i] = new DataHolder[size--];
-		}
-		for (int i = 0; i < matrix.length; i++) {
-			Chunk vertexOne = input.get(i);
-			for (int j = 0; j < matrix[i].length; j++) {
-				int q = j + i;
-				Chunk vertexTwo = input.get(q);
-				DataHolder holder = new DataHolder();
-				holder.h = i;
-				holder.w = q;
-				//holder.distance = (float) vertexOne.chunkPosition.distance(vertexTwo.chunkPosition);
-				holder.distance = (float) vertexOne.endPoint.distance(vertexTwo.startPoint);
-				matrix[i][j] = holder;
-			}
-		}
-		try {
-			Files.deleteIfExists(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"));
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < matrix.length; i++) {
-				sb.append(Arrays.toString(matrix[i]) + "\n");
-			}
-			Files.write(Paths.get(System.getProperty("user.home") + "\\Desktop\\s.txt"), sb.toString().getBytes());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	private Optional<DataHolder> whereToGo_v2(int height) {
-		Chunk from = input.get(height);
-		from.locked = true;
-		short powCost = 1;
-		short powDistance = 2;
-		float distanceDivider = 10f;
-		DataHolder[] edg = matrix[height];
-		List<DataHolder> edgesHolderContainer = new LinkedList<>();
-		int _height = height - 1;
-		int _width = 1;
-		while (_height > -1) {
-			DataHolder data = matrix[_height][_width];
-			if (!input.get(data.h).locked) {
-				edgesHolderContainer.add(data);
-			}
-			_height--;
-			_width++;
-		}
-		for (int i = 1; i < edg.length; i++) {
-			if (!input.get(edg[i].w).locked)
-				edgesHolderContainer.add(edg[i]);
-		}
-
-		List<AntEdgeChoserContainer> choser = new LinkedList<>();
-		edgesHolderContainer.stream().forEach(e -> {
-			AntEdgeChoserContainer aecc = new AntEdgeChoserContainer();
-			aecc.dataHolderEdge = e;
-			aecc.chanceToGoHere = (float) (Math.pow(e.transitionCost, powCost)
-					* (Math.pow(distanceDivider / e.distance, powDistance)));
-			choser.add(aecc);
-		});
-		float chanceToAll = choser.stream().map(e -> e.chanceToGoHere).reduce(0f, Float::sum);
-		choser.stream().forEach(e -> e.chanceToGoHere = e.chanceToGoHere / chanceToAll);
-
-		choser.sort((o1, o2) -> Float.compare(o1.chanceToGoHere, o2.chanceToGoHere));
-
-		ThreadLocalRandom tlr = ThreadLocalRandom.current();
-		float rnd = tlr.nextFloat();
-
-		Optional<AntEdgeChoserContainer> res = closest_v2(choser, rnd);
-
-		if (res.isPresent()) {
-			AntEdgeChoserContainer chosedAECC = res.get();
-			DataHolder chosedDH = chosedAECC.dataHolderEdge;
-			int where = chosedDH.h == height ? chosedDH.w : chosedDH.h;
-			Chunk result = input.get(where);
-			result.locked = true;
-			chosedDH.where = result;
-			return Optional.of(chosedDH);
-		}
-
-		return Optional.empty();
-
-	}
-
-	private Optional<AntEdgeChoserContainer> closest_v2(List<AntEdgeChoserContainer> chances, float random) {
-		if (chances.size() < 1) {
-			// return null;
-			return Optional.empty();
-		}
-		AtomicReference<AntEdgeChoserContainer> result = new AtomicReference<>(null);
-		AtomicReference<Float> minChance = new AtomicReference<>(Float.MAX_VALUE);
-
-		for (short i = 0; i < chances.size(); i++) {
-			if (chances.get(i).chanceToGoHere <= random) {
-				result.set(chances.get(i));
-				minChance.set(chances.get(i).chanceToGoHere);
-			} else {
-				break;
-			}
-		}
-
-		if (minChance.get() == Float.MAX_VALUE) {
-			result.set(chances.get(0));
-		}
-		// return result.get();
-		return Optional.of(result.get());
-	}
-
-	private void updateMatrix(List<List<DataHolder>> allSequencesContainer) {
-		final int consta = 30;
-		// int pathLength = 2;
-		// int addition = consta / pathLength;
-		// int costOnNewIteration = (dataholder.transitionCost * vaporizeRatio) + addition;
-
-		Arrays.stream(matrix).forEach(e -> {
-			Arrays.stream(e).forEach(ee -> {
-				ee.transitionCost = ee.transitionCost * 0.6f;
-			});
-		});
-		allSequencesContainer.stream().forEach(dataHolders -> {
-			AtomicReference<Float> curLength = new AtomicReference<>(0f);
-			Chunk a = dataHolders.get(0).where;
-			dataHolders.stream().skip(1).forEach(ee -> {
-				curLength.set(curLength.get() + (float) a.chunkPosition.distance(ee.where.chunkPosition));
-			});
-			dataHolders.stream().forEach(data -> {
-				data.transitionCost = consta / curLength.get();
-			});
-		});
-	}
 
 }

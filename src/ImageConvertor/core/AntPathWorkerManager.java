@@ -63,11 +63,11 @@ public class AntPathWorkerManager implements Pathfinder {
 		List<List<Chunk>> rr = new LinkedList<>();
 		result.stream().forEach(e -> {
 			AntPathWorker worker = new AntPathWorker(e);
-			// worker.run();
-			worker.run_v2();
+			worker.run();
+			// worker.run_v2();
 
 			if (worker.getResult().size() > 0) {
-				rr.add(worker.getResult());
+				rr.addAll(worker.getResult());
 			}
 		});
 		controller.setPathsPointList(rr);

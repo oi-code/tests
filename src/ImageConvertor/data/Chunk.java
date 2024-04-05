@@ -10,7 +10,7 @@ import ImageConvertor.core.AntEdge;
 
 public class Chunk implements Cloneable, Comparable<Chunk> {
 	public Direction direction = Direction.STUB;
-	public boolean visited;
+	public boolean notAvalivable;
 	public boolean locked;
 	public int index = 0;
 	public Point startPoint;
@@ -46,12 +46,16 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 		Chunk res = new Chunk();
 		res.index = this.index;
 		res.direction = this.direction;
-		res.visited = this.visited;
+		res.notAvalivable = this.notAvalivable;
 		res.locked = this.locked;
 		res.startPoint = this.startPoint;
 		res.endPoint = this.endPoint;
 		res.chunkPosition = this.chunkPosition;
 		return res;
+	}
+	
+	public void notAvalivable() {
+		this.notAvalivable = true;
 	}
 
 	public List<Chunk> getFreeAroundChunks() {
@@ -77,7 +81,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 
 	@Override
 	public String toString() {
-		return "Chunk [visited=" + visited + ", locked=" + locked + ", index=" + index + ", startPoint=" + startPoint
+		return "Chunk [visited=" + notAvalivable + ", locked=" + locked + ", index=" + index + ", startPoint=" + startPoint
 				+ ", endPoint=" + endPoint + ", chunkPosition=" + chunkPosition + ", layer=" + layer
 				+ ", chunkTotalLuminiance=" + chunkTotalLuminiance + ", avalivableChunksSise=" + avalivableChunks.size()
 				+ ", cloudIndex=" + cloudIndex + "]";
