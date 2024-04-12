@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
+import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
 
 public class AntPathWorkerManager implements Pathfinder {
@@ -52,7 +53,7 @@ public class AntPathWorkerManager implements Pathfinder {
 	}
 
 	@Override
-	public List<List<Chunk>> getSequencesOfClouds() {
+	public List<Chunk> getPath() {
 
 		List<Set<Chunk>> clouds = createClouds();
 
@@ -60,19 +61,23 @@ public class AntPathWorkerManager implements Pathfinder {
 		for (Set<Chunk> s : clouds) {
 			result.add(new ArrayList<>(s));
 		}
+		System.out.println("clouds created");
 		List<List<Chunk>> rr = new LinkedList<>();
 		result.stream().forEach(e -> {
 			AntPathWorker worker = new AntPathWorker(e);
 			worker.run();
 			// worker.run_v2();
-
-			if (worker.getResult().size() > 0) {
-				rr.addAll(worker.getResult());
-			}
+			// SquarePathFinder spf = new SquarePathFinder(controller);
+			// rr.add(spf.getPath());
+			// if (worker.getResult().size() > 0) {
+			// rr.addAll(worker.getResult());
+			// }
+			rr.addAll(worker.getResult());
+			System.out.println("created without errors");
 		});
 		controller.setPathsPointList(rr);
-		// controller.setPathsPointList(result);
-		return result;
+		//controller.setPathsPointList(result);
+		return result.get(0);
 	}
 
 	private List<Set<Chunk>> createClouds() {
@@ -194,7 +199,7 @@ public class AntPathWorkerManager implements Pathfinder {
 			}
 			/* add all new chunks to result */
 			input.addAll(check);
-			if (counter == 100) {
+			if (counter == 0) {
 				queue.offer("holes:" + check.size() + ", connected " + (buffer.size() + check.size() + input.size())
 						+ " of " + totalChunks + ",cloud:" + cloudIndex);
 				counter = 0;
@@ -336,7 +341,6 @@ public class AntPathWorkerManager implements Pathfinder {
 			currentHeight--;
 		}
 		return indexes;
-
 	}
 
 	@Override

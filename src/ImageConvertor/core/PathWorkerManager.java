@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 
 import ImageConvertor.data.Direction;
 import ImageConvertor.data.Edge;
+import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
 
@@ -79,8 +80,8 @@ public class PathWorkerManager implements Pathfinder {
 	}
 
 	@Override
-	public List<List<Chunk>> getSequencesOfClouds() {
-		return getPath();
+	public List<Chunk> getPath() {
+		return null;
 	}
 
 	private void reloadPointsContainer() {
@@ -103,7 +104,7 @@ public class PathWorkerManager implements Pathfinder {
 		return matrix;
 	}
 
-	private List<List<Chunk>> getPath() {
+	private List<List<Chunk>> getPath_() {
 
 		List<Set<Chunk>> finalList = new ArrayList<>();
 

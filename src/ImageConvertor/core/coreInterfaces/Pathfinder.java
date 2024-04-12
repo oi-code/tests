@@ -1,11 +1,11 @@
-package ImageConvertor.core;
+package ImageConvertor.core.coreInterfaces;
 
 import java.util.List;
 
 import ImageConvertor.data.Chunk;
 
 public interface Pathfinder {
-	public List<List<Chunk>> getSequencesOfClouds();
+	public List<Chunk> getPath();
 
 	public void cancelTask();
 }

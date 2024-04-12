@@ -120,7 +120,7 @@ public class ParsedImagePreview extends JPanel
 			for (Chunk innerCurrentPoints : currentDrawingList) {
 
 				if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
-					continue;
+					//continue;
 				}
 
 				int x1 = innerCurrentPoints.startPoint.x / count;
@@ -306,7 +306,7 @@ public class ParsedImagePreview extends JPanel
 				}
 			}
 		});
-		but=button;
+		but = button;
 		return button;
 	}
 

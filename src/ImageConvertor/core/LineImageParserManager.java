@@ -16,14 +16,14 @@ import java.util.concurrent.Future;
 
 import ImageConvertor.data.Chunk;
 
-public class ImageParserWorker {
+public class LineImageParserManager {
 
 	private Controller controller;
 	private ExecutorService exec = Executors.newFixedThreadPool(Controller.N_THREADS * 2);
 	private CompletionService<List<Chunk>> service = new ExecutorCompletionService<List<Chunk>>(exec);
 	private Queue<String> queue;
 
-	public ImageParserWorker(Controller c, ConcurrentLinkedQueue<String> queue) {
+	public LineImageParserManager(Controller c, ConcurrentLinkedQueue<String> queue) {
 		controller = c;
 		this.queue = queue;
 	}
@@ -43,7 +43,7 @@ public class ImageParserWorker {
 		byte currentAccaptedTask = 0;
 		for (int i = 0; i < steps.size() - 1; i++) {
 
-			SingleThreadParseImage temParseImage = new SingleThreadParseImage(controller);
+			LineImageParserWorker temParseImage = new LineImageParserWorker(controller);
 			temParseImage.setMinLum(steps.get(i));
 			temParseImage.setMaxLum(steps.get(i + 1));
 			temParseImage.setLayer(currentAccaptedTask);

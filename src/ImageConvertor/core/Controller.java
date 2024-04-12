@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.ImageIcon;
 
 import ImageConvertor.data.State;
+import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.GCodeCreatorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
@@ -176,11 +177,15 @@ public class Controller {
 			 * rangeRate,
 			 * weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
 			 */
-			workerManager = new AntPathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints, rangeRate,
-					weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
-
+			/*
+			 * workerManager = new AntPathWorkerManager(this, totalConnectedPointsLimit, limitConnectedPoints,
+			 * rangeRate,
+			 * weightRate, pathLengthDivider, maxRange, pathDivider, iterations, vaporizeRate, queue);
+			 * workerManager.getPath();
+			 */
 			// workerManager.createClouds();
-			workerManager.getSequencesOfClouds();
+			// workerManager.getSequencesOfClouds();
+			new SquarePathFinder(this);
 			if (isCanceled) {
 				isProcessed = false;
 			} else {
@@ -205,7 +210,9 @@ public class Controller {
 			Thread view = new Thread(new ViewProccessStatus(this, queue));
 			view.setDaemon(true);
 			view.start();
-			ImageParserWorker parser = new ImageParserWorker(this, queue);
+			// LineImageParserManager parser = new LineImageParserManager(this, queue);
+			LuminImageParserWorker parser = new LuminImageParserWorker(this);
+
 			STATE.setAllLayers(parser.doTask());
 			if (isCanceled) {
 				isProcessed = false;

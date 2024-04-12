@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import ImageConvertor.data.Direction;
 import ImageConvertor.data.Chunk;
 
-class SingleThreadParseImage {
+class LineImageParserWorker {
 
 	protected BufferedImage img;
 	protected short imageWidth;
@@ -18,7 +18,7 @@ class SingleThreadParseImage {
 	protected byte layer;
 	protected Controller c;
 
-	public SingleThreadParseImage(Controller c) {
+	public LineImageParserWorker(Controller c) {
 		this.c = c;
 		this.img = c.getBufferedImage();
 		this.chunkResolution = c.getChunkSize();

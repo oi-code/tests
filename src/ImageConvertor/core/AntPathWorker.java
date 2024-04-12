@@ -82,12 +82,14 @@ public class AntPathWorker implements Runnable {
 
 	@Override
 	public void run() {
-
+		// System.out.println("START TO FIND PATH");
 		List<List<Chunk>> cont = new LinkedList<>();
-
+		int count = 0;
 		for (Chunk startSeed : input) {
+			count++;
 			if (startSeed.notAvalivable)
 				continue;
+			// System.out.println("progress " + count + ", total " + input.size());
 			clearVisitedFlags();
 			List<Chunk> currentSequence = new LinkedList<>();
 			startSeed.locked = true;
@@ -112,10 +114,10 @@ public class AntPathWorker implements Runnable {
 		// Set<Chunk> hash = new HashSet<>(rs);
 		// System.out.println(rs.size() + " " + hash.size());
 		int sum = input.stream().filter(e -> !e.notAvalivable).map(e -> 1).reduce(0, Integer::sum);
-		System.out.println("free: " + sum + ", total: " + input.size());
+		// System.out.println("free: " + sum + ", total: " + input.size());
 		result.add(rs);
 		if (sum > 0) {
-			System.out.println("RUNNED AGAIN");
+			// System.out.println("RUNNED AGAIN");
 			run();
 		}
 	}
@@ -125,7 +127,7 @@ public class AntPathWorker implements Runnable {
 	}
 
 	private void clearVisitedFlags() {
-		input.stream().forEach(e -> e.locked = false);
+		input.stream().filter(e -> !e.notAvalivable).forEach(e -> e.locked = false);
 	}
 
 	/*
@@ -313,6 +315,8 @@ public class AntPathWorker implements Runnable {
 	 */
 	private Optional<AntEdgeChoserContainer> chanceToGoTo(float INVERSE_DISTANCE_DIVIDER, byte POW_COST,
 			byte POW_INVERSE_DISTANCE, Chunk from, Chunk to) {
+		if (from.notAvalivable || to.notAvalivable)
+			return Optional.empty();
 		AntEdge edge = null;
 		/*
 		 * find the same edge in two vertexes

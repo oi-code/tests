@@ -366,7 +366,7 @@ public class View extends JFrame {
 	private JComponent getConstructPathButton() {
 		JButton constructPath = new JButton(controller.getLocaleText("construct_path"));
 		constructPath.setFocusable(false);
-		constructPath.addActionListener(e -> {
+		constructPath.addActionListener(e -> {			
 			List<Float> settings = new AlgorithmSettingsView(controller).getSettings();
 			controller.createPath(settings);
 		});
