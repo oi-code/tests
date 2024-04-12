@@ -34,8 +34,8 @@ public class LuminImageParserWorker {
 
 		this.layers = controller.getLayers();
 		matrix = new Chunk[matrixHeight][matrixWidth];
-		System.out.println(imageWidth+" "+imageHeight);
-		System.out.println(matrixWidth+" "+matrixHeight);
+		//System.out.println(imageWidth+" "+imageHeight);
+		//System.out.println(matrixWidth+" "+matrixHeight);
 	}
 
 	public List<List<Chunk>> doTask() {
@@ -67,7 +67,7 @@ public class LuminImageParserWorker {
 				result.get(chosedLayerIndex).add(currentChunk);
 			}
 		}
-		result.stream().map(e -> e.size()).forEach(System.out::println);
+		//result.stream().map(e -> e.size()).forEach(System.out::println);
 		return result;
 	}
 
@@ -77,8 +77,8 @@ public class LuminImageParserWorker {
 			for (int out_j = 0; out_j < imageWidth; out_j += chunkSize) {
 				Chunk currentChunk = new Chunk((short) (out_i / chunkSize), (short) (out_j / chunkSize));
 				currentChunk.direction = Direction.RIGHT;
-				currentChunk.startPoint = new Point(out_i, out_j);
-				currentChunk.endPoint = new Point(out_i + tlr.nextInt(chunkSize), out_j + tlr.nextInt(chunkSize));
+				currentChunk.startPoint = new Point(out_j, out_i);
+				currentChunk.endPoint = new Point(out_j + tlr.nextInt(chunkSize), out_i + tlr.nextInt(chunkSize));
 				float currentChunkLuminiance = 0f;
 				for (int inner_i = out_i; inner_i < out_i + chunkSize; inner_i++) {
 					for (int inner_j = out_j; inner_j < out_j + chunkSize; inner_j++) {

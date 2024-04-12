@@ -39,7 +39,13 @@ public class SquarePathFinder implements Pathfinder {
 
 		for (List<Chunk> currentlayer : allLayers) {
 			for (Chunk currentChunk : currentlayer) {
-				allChosedLayersInOneLayer[currentChunk.chunkPosition.y][currentChunk.chunkPosition.x] = currentChunk;
+				//try {
+					allChosedLayersInOneLayer[currentChunk.chunkPosition.y][currentChunk.chunkPosition.x] = currentChunk;
+				/*} catch (ArrayIndexOutOfBoundsException e) {
+					// TODO: handle exception
+					System.out.println(currentChunk.chunkPosition.y+" y chunk x "+currentChunk.chunkPosition.x);
+					System.out.println(allChosedLayersInOneLayer.length+" lgth "+allChosedLayersInOneLayer[0].length);
+				}*/
 			}
 		}
 		for (int i = 0; i < allChosedLayersInOneLayer.length; i++) {

@@ -25,7 +25,7 @@ public class Chunk implements Cloneable, Comparable<Chunk> {
 	private Chunk() {
 
 	}
-
+	
 	public Chunk(short myHeight_, short myWidth_) {
 		startPoint = new Point();
 		endPoint = new Point();
