@@ -39,16 +39,7 @@ public class SquarePathFinder implements Pathfinder {
 
 		for (List<Chunk> currentlayer : allLayers) {
 			for (Chunk currentChunk : currentlayer) {
-				// try {
 				allChosedLayersInOneLayer[currentChunk.chunkPosition.y][currentChunk.chunkPosition.x] = currentChunk;
-				/*
-				 * } catch (ArrayIndexOutOfBoundsException e) {
-				 * // TODO: handle exception
-				 * System.out.println(currentChunk.chunkPosition.y+" y chunk x "+currentChunk.chunkPosition.x);
-				 * System.out.println(allChosedLayersInOneLayer.length+" lgth "+allChosedLayersInOneLayer[0].length)
-				 * ;
-				 * }
-				 */
 			}
 		}
 		for (int i = 0; i < allChosedLayersInOneLayer.length; i++) {
@@ -90,14 +81,14 @@ public class SquarePathFinder implements Pathfinder {
 		/*
 		 * search next chunk in distance 1 (pixel, chunk, ect)
 		 */
-		Optional<Chunk> next = getNextChunk_r1(seed);
+		Optional<Chunk> next = getNextChunk_distanceOneChunk(seed);
 		while (result.size() < totalChunks) {
 			if (next.isPresent()) {
 				distance = 1;
 				Chunk _next = next.get();
 				result.add(_next);
 				_next.locked = true;
-				next = getNextChunk_r1(_next);
+				next = getNextChunk_distanceOneChunk(_next);
 			} else {
 				/*
 				 * if chunk in distance 1 (pixel, chunk, ect) is not exist,
@@ -105,11 +96,11 @@ public class SquarePathFinder implements Pathfinder {
 				 */
 				distance++;
 				Chunk _last = result.get(result.size() - 1);
-				next = getNextChunk_rm(_last, distance);
+				next = getNextChunk_distanceMaxRangeChunk(_last, distance);
 				while (next.isEmpty() && distance < maxRange) {
 					// System.out.println("here");
 					distance++;
-					next = getNextChunk_rm(_last, distance);
+					next = getNextChunk_distanceMaxRangeChunk(_last, distance);
 				}
 			}
 		}
@@ -119,10 +110,21 @@ public class SquarePathFinder implements Pathfinder {
 	/*
 	 * check chunks in distance 1 (pixel, chunk, ect)
 	 */
-	private Optional<Chunk> getNextChunk_r1(Chunk seed) {
+	private Optional<Chunk> getNextChunk_distanceOneChunk(Chunk seed) {
 		int seedHeight = seed.chunkPosition.y;
 		int seedWidth = seed.chunkPosition.x;
 		Chunk next = null;
+		/*
+		 * XOO
+		 * O-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
 		/*
 		 * OXO
 		 * O-O
@@ -135,12 +137,12 @@ public class SquarePathFinder implements Pathfinder {
 			}
 		}
 		/*
-		 * XOO
+		 * OOX
 		 * O-O
 		 * OOO
 		 */
-		if (checkBound(seedWidth - 1, seedHeight - 1)) {
-			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+		if (checkBound(seedWidth + 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth + 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -157,12 +159,12 @@ public class SquarePathFinder implements Pathfinder {
 			}
 		}
 		/*
-		 * OOX
-		 * O-O
 		 * OOO
+		 * O-O
+		 * OOX
 		 */
-		if (checkBound(seedWidth + 1, seedHeight - 1)) {
-			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth + 1];
+		if (checkBound(seedWidth + 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth + 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -181,10 +183,10 @@ public class SquarePathFinder implements Pathfinder {
 		/*
 		 * OOO
 		 * O-O
-		 * OOX
+		 * XOO
 		 */
-		if (checkBound(seedWidth + 1, seedHeight + 1)) {
-			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth + 1];
+		if (checkBound(seedWidth - 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth - 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -200,33 +202,22 @@ public class SquarePathFinder implements Pathfinder {
 				return Optional.of(next);
 			}
 		}
-		/*
-		 * OOO
-		 * O-O
-		 * XOO
-		 */
-		if (checkBound(seedWidth - 1, seedHeight + 1)) {
-			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth - 1];
-			if (next != null && !next.locked) {
-				return Optional.of(next);
-			}
-		}
 		return Optional.empty();
 	}
 
 	/*
 	 * check chunk in distance more than 1 (pixel, chunk, ect)
 	 */
-	private Optional<Chunk> getNextChunk_rm(Chunk seed, int range) {
+	private Optional<Chunk> getNextChunk_distanceMaxRangeChunk(Chunk seed, int distance) {
 
 		short startWidth = (short) seed.chunkPosition.x;
 		short startHeight = (short) seed.chunkPosition.y;
 
-		short currentWidth = (short) (startWidth - range);
-		short currentHeight = (short) (startHeight - range);
+		short currentWidth = (short) (startWidth - distance);
+		short currentHeight = (short) (startHeight - distance);
 
 		// from top left to top right
-		while (currentWidth <= startWidth + range) {
+		while (currentWidth <= startWidth + distance) {
 			if (checkBound(currentWidth, currentHeight)) {
 				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
 						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
@@ -246,7 +237,7 @@ public class SquarePathFinder implements Pathfinder {
 		currentHeight++;
 		// why here is "<=" instead of "<" was explained above. Situation the same.
 		// from top right to bottom right
-		while (currentHeight <= startHeight + range) {
+		while (currentHeight <= startHeight + distance) {
 			if (checkBound(currentWidth, currentHeight)) {
 				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
 						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
@@ -261,7 +252,7 @@ public class SquarePathFinder implements Pathfinder {
 		currentWidth--;
 		// here ">=" instead of ">" because we need to return to start width position.
 		// from bottom right to bottom left
-		while (currentWidth >= startWidth - range) {
+		while (currentWidth >= startWidth - distance) {
 			if (checkBound(currentWidth, currentHeight)) {
 				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
 						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
@@ -280,7 +271,7 @@ public class SquarePathFinder implements Pathfinder {
 		 */
 		currentHeight--;
 		// from bottom left to top left -1
-		while (currentHeight > startHeight - range) {
+		while (currentHeight > startHeight - distance) {
 			if (checkBound(currentWidth, currentHeight)) {
 				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
 						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
