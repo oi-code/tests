@@ -39,13 +39,16 @@ public class SquarePathFinder implements Pathfinder {
 
 		for (List<Chunk> currentlayer : allLayers) {
 			for (Chunk currentChunk : currentlayer) {
-				//try {
-					allChosedLayersInOneLayer[currentChunk.chunkPosition.y][currentChunk.chunkPosition.x] = currentChunk;
-				/*} catch (ArrayIndexOutOfBoundsException e) {
-					// TODO: handle exception
-					System.out.println(currentChunk.chunkPosition.y+" y chunk x "+currentChunk.chunkPosition.x);
-					System.out.println(allChosedLayersInOneLayer.length+" lgth "+allChosedLayersInOneLayer[0].length);
-				}*/
+				// try {
+				allChosedLayersInOneLayer[currentChunk.chunkPosition.y][currentChunk.chunkPosition.x] = currentChunk;
+				/*
+				 * } catch (ArrayIndexOutOfBoundsException e) {
+				 * // TODO: handle exception
+				 * System.out.println(currentChunk.chunkPosition.y+" y chunk x "+currentChunk.chunkPosition.x);
+				 * System.out.println(allChosedLayersInOneLayer.length+" lgth "+allChosedLayersInOneLayer[0].length)
+				 * ;
+				 * }
+				 */
 			}
 		}
 		for (int i = 0; i < allChosedLayersInOneLayer.length; i++) {
@@ -59,9 +62,18 @@ public class SquarePathFinder implements Pathfinder {
 
 	@Override
 	public List<Chunk> getPath() {
+		/*
+		 * result path container
+		 */
 		List<Chunk> result = new LinkedList<>();
+		/*
+		 * legacy of copy-paste
+		 */
 		Chunk[][] cloud = allChosedLayersInOneLayer;
 		Chunk seed = null;
+		/*
+		 * looking for entry
+		 */
 		breaker: for (int i = 0; i < cloud.length; i++) {
 			for (int j = 0; j < cloud[i].length; j++) {
 				if (cloud[i][j] != null && !cloud[i][j].locked) {
@@ -74,30 +86,138 @@ public class SquarePathFinder implements Pathfinder {
 			return null;
 		}
 		result.add(seed);
-		int range = 1;
-		Optional<Chunk> next = getNextChunk(seed, range);
+		int distance = 1;
+		/*
+		 * search next chunk in distance 1 (pixel, chunk, ect)
+		 */
+		Optional<Chunk> next = getNextChunk_r1(seed);
 		while (result.size() < totalChunks) {
 			if (next.isPresent()) {
-				range = 1;
+				distance = 1;
 				Chunk _next = next.get();
 				result.add(_next);
 				_next.locked = true;
-				next = getNextChunk(_next, range);
+				next = getNextChunk_r1(_next);
 			} else {
-				range++;
+				/*
+				 * if chunk in distance 1 (pixel, chunk, ect) is not exist,
+				 * start to increase distance and check matrix for existing acceptable chunk
+				 */
+				distance++;
 				Chunk _last = result.get(result.size() - 1);
-				next = getNextChunk(_last, range);
-				while (next.isEmpty() && range < maxRange) {
+				next = getNextChunk_rm(_last, distance);
+				while (next.isEmpty() && distance < maxRange) {
 					// System.out.println("here");
-					range++;
-					next = getNextChunk(_last, range);
+					distance++;
+					next = getNextChunk_rm(_last, distance);
 				}
 			}
 		}
 		return result;
 	}
 
-	private Optional<Chunk> getNextChunk(Chunk seed, int range) {
+	/*
+	 * check chunks in distance 1 (pixel, chunk, ect)
+	 */
+	private Optional<Chunk> getNextChunk_r1(Chunk seed) {
+		int seedHeight = seed.chunkPosition.y;
+		int seedWidth = seed.chunkPosition.x;
+		Chunk next = null;
+		/*
+		 * OXO
+		 * O-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * XOO
+		 * O-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * O-X
+		 * OOO
+		 */
+		if (checkBound(seedWidth + 1, seedHeight)) {
+			next = allChosedLayersInOneLayer[seedHeight][seedWidth + 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOX
+		 * O-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth + 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth + 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * O-O
+		 * OXO
+		 */
+		if (checkBound(seedWidth, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * O-O
+		 * OOX
+		 */
+		if (checkBound(seedWidth + 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth + 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * X-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * O-O
+		 * XOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		return Optional.empty();
+	}
+
+	/*
+	 * check chunk in distance more than 1 (pixel, chunk, ect)
+	 */
+	private Optional<Chunk> getNextChunk_rm(Chunk seed, int range) {
 
 		short startWidth = (short) seed.chunkPosition.x;
 		short startHeight = (short) seed.chunkPosition.y;

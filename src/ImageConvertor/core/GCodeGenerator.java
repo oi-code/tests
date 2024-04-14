@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import ImageConvertor.data.Chunk;
@@ -14,11 +15,13 @@ public class GCodeGenerator {
 	private float pixelSize = 0.207f;
 	private short[] a4Sheet = new short[] { 210, 297 };
 	private String up = "M5 S0";
-	private String down = "M3 S30";
+	private String down = "M3 S20";
 	private String delayString = "G4 P0.1";
 
 	Controller controller;
 	private List<List<Chunk>> path;
+	private List<List<Chunk>> chosedLayers;
+	private List<Chunk[][]> matrixes;
 	private StringBuilder sb;
 	private int width;
 	private int height;
@@ -27,22 +30,22 @@ public class GCodeGenerator {
 	public GCodeGenerator(Controller controller, List<String> settings) {
 		super();
 		this.controller = controller;
-		path = new ArrayList<>();
-		/*
-		 * controller.getForDrawContainer().stream().forEach(e -> {
-		 * List<Point> temp = new ArrayList<>();
-		 * e.stream().forEach(i -> {
-		 * temp.add(i.startPoint);
-		 * temp.add(i.endPoint);
-		 * });
-		 * path.add(temp);
-		 * });
-		 */
+		matrixes = new LinkedList<>();
+		chosedLayers = controller.getChosedLayersForDraw();
+		int chunkSize = controller.getChunkSize();
+		final int _height = (controller.getImageHeight() - controller.getImageHeight() % chunkSize) / chunkSize;
+		final int _width = (controller.getImageWidth() - controller.getImageWidth() % chunkSize) / chunkSize;
+		chosedLayers.forEach(e -> {
+			Chunk[][] temp = new Chunk[_height][_width];
+			e.forEach(chunk -> {
+				temp[chunk.chunkPosition.y][chunk.chunkPosition.x] = chunk;
+			});
+			matrixes.add(temp);
+		});
 		path = controller.getFinalList();
 		sb = new StringBuilder();
 		int boundHeight = 0;
 		int boundWidth = 0;
-		int chunkSize = controller.getChunkSize();
 		while (boundWidth < controller.getImageWidth()) {
 			boundWidth += chunkSize;
 		}
@@ -74,7 +77,7 @@ public class GCodeGenerator {
 		float scaler = Math.min(scaleHeight, scaleWidth) * scale;
 
 		int chunkSize = controller.getChunkSize();
-		int maxConnectedRange = 10;
+		int maxConnectedRange = 7;
 
 		float maxCalcRange = chunkSize * maxConnectedRange;
 
@@ -83,26 +86,41 @@ public class GCodeGenerator {
 		sb.append("G90\n");
 		sb.append(servoUpCutPath);
 		boolean isUp = false;
+		int outlist = 0;
+		int innerlistChunk = 0;
 		for (List<Chunk> list : path) {
 			sb.append(servoUpCutPath);
 			isUp = true;
 			Chunk prev = list.get(0);
-			sb.append(String.format(pathTemplate, prev.startPoint.getX() * pixelSize * scaler, prev.startPoint.getY() * pixelSize * scaler));
+			sb.append(String.format(pathTemplate, prev.startPoint.getX() * pixelSize * scaler,
+					prev.startPoint.getY() * pixelSize * scaler));
 			sb.append(servoDownCutPath);
 			for (Chunk cur : list) {
 				if (isUp) {
 					sb.append(servoDownCutPath);
 					isUp = false;
 				}
-				if (prev.startPoint.distance(cur.startPoint) > maxCalcRange && !isUp) {
+				if (prev.endPoint.distance(cur.startPoint) > maxCalcRange && !isUp) {
 					sb.append(servoUpCutPath);
 					isUp = true;
 				}
-				double curX = cur.startPoint.getX() * pixelSize;
-				double curY = cur.startPoint.getY() * pixelSize;
-				sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+				matrixes.stream().forEach(matrix -> {
+					Chunk pathChunk = matrix[cur.chunkPosition.y][cur.chunkPosition.x];
+					if (pathChunk != null) {
+						double curX = pathChunk.startPoint.getX() * pixelSize;
+						double curY = pathChunk.startPoint.getY() * pixelSize;
+						sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+					}
+				});
+				/*
+				 * double curX = cur.startPoint.getX() * pixelSize;
+				 * double curY = cur.startPoint.getY() * pixelSize;
+				 * sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+				 */
 				prev = cur;
+				innerlistChunk++;
 			}
+			outlist++;
 		}
 		sb.append(servoUpCutPath);
 		sb.append("G28");

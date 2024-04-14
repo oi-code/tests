@@ -210,8 +210,8 @@ public class Controller {
 			Thread view = new Thread(new ViewProccessStatus(this, queue));
 			view.setDaemon(true);
 			view.start();
-			// LineImageParserManager parser = new LineImageParserManager(this, queue);
-			LuminImageParserWorker parser = new LuminImageParserWorker(this);
+			//LineImageParserManager parser = new LineImageParserManager(this, queue);
+			 LuminImageParserWorker parser = new LuminImageParserWorker(this);
 
 			STATE.setAllLayers(parser.doTask());
 			if (isCanceled) {

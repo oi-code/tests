@@ -74,7 +74,7 @@ public class GCodeCreatorView extends JDialog {
 		JLabel text = new JLabel(controller.getLocaleText("pen_down"));
 		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		JTextField input = new JTextField();
-		input.setText("M3 S30");
+		input.setText("M3 S20");
 		input.setFont(text.getFont().deriveFont(size));
 
 		container.add(text);
