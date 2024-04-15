@@ -86,8 +86,6 @@ public class GCodeGenerator {
 		sb.append("G90\n");
 		sb.append(servoUpCutPath);
 		boolean isUp = false;
-		int outlist = 0;
-		int innerlistChunk = 0;
 		for (List<Chunk> list : path) {
 			sb.append(servoUpCutPath);
 			isUp = true;
@@ -109,6 +107,8 @@ public class GCodeGenerator {
 					if (pathChunk != null) {
 						double curX = pathChunk.startPoint.getX() * pixelSize;
 						double curY = pathChunk.startPoint.getY() * pixelSize;
+						// double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
+						// double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
 						sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 					}
 				});
@@ -118,9 +118,7 @@ public class GCodeGenerator {
 				 * sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 				 */
 				prev = cur;
-				innerlistChunk++;
 			}
-			outlist++;
 		}
 		sb.append(servoUpCutPath);
 		sb.append("G28");

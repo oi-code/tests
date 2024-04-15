@@ -137,17 +137,6 @@ public class SquarePathFinder implements Pathfinder {
 			}
 		}
 		/*
-		 * OOX
-		 * O-O
-		 * OOO
-		 */
-		if (checkBound(seedWidth + 1, seedHeight - 1)) {
-			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth + 1];
-			if (next != null && !next.locked) {
-				return Optional.of(next);
-			}
-		}
-		/*
 		 * OOO
 		 * O-X
 		 * OOO
@@ -159,12 +148,12 @@ public class SquarePathFinder implements Pathfinder {
 			}
 		}
 		/*
-		 * OOO
-		 * O-O
 		 * OOX
+		 * O-O
+		 * OOO
 		 */
-		if (checkBound(seedWidth + 1, seedHeight + 1)) {
-			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth + 1];
+		if (checkBound(seedWidth + 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth + 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -183,10 +172,10 @@ public class SquarePathFinder implements Pathfinder {
 		/*
 		 * OOO
 		 * O-O
-		 * XOO
+		 * OOX
 		 */
-		if (checkBound(seedWidth - 1, seedHeight + 1)) {
-			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth - 1];
+		if (checkBound(seedWidth + 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth + 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -198,6 +187,17 @@ public class SquarePathFinder implements Pathfinder {
 		 */
 		if (checkBound(seedWidth - 1, seedHeight - 1)) {
 			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
+		 * OOO
+		 * O-O
+		 * XOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth - 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
