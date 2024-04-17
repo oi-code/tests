@@ -14,18 +14,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.data.Chunk;
 
-public class LineImageParserManager {
+public class LineImageParserManager implements ImageParser {
 
 	private Controller controller;
 	private ExecutorService exec = Executors.newFixedThreadPool(Controller.N_THREADS * 2);
 	private CompletionService<List<Chunk>> service = new ExecutorCompletionService<List<Chunk>>(exec);
 	private Queue<String> queue;
 
-	public LineImageParserManager(Controller c, ConcurrentLinkedQueue<String> queue) {
+	public LineImageParserManager(Controller c) {
 		controller = c;
-		this.queue = queue;
 	}
 
 	public List<List<Chunk>> doTask() {
@@ -72,8 +72,10 @@ public class LineImageParserManager {
 				try {
 					res = temp.get();
 					results.add(res);
-					/*queue.offer(String.format(controller.getLocaleText("current_Done_Layer") + ": %d",
-							Double.valueOf(1d)));//Math.round(res.get(0).layer)));*/
+					/*
+					 * queue.offer(String.format(controller.getLocaleText("current_Done_Layer") + ": %d",
+					 * Double.valueOf(1d)));//Math.round(res.get(0).layer)));
+					 */
 
 					currentDoneTask++;
 				} catch (InterruptedException e) {
@@ -129,5 +131,9 @@ public class LineImageParserManager {
 		}
 		// STATE.setAllLayersContainer(results);
 		return results;
+	}
+
+	public void setQueue(Queue<String> queue) {
+		this.queue = queue;
 	}
 }

@@ -13,6 +13,7 @@ public class SquarePathFinder implements Pathfinder {
 	private Chunk[][] allChosedLayersInOneLayer;
 	private int maxRange;
 	private int totalChunks;
+	private int currentSide = 0;
 
 	public SquarePathFinder(Controller controller) {
 
@@ -53,6 +54,204 @@ public class SquarePathFinder implements Pathfinder {
 
 	@Override
 	public List<Chunk> getPath() {
+		List<Chunk> result = new LinkedList<>();
+		Chunk[][] cloud = allChosedLayersInOneLayer;
+		Chunk seed = null;
+		/*
+		 * looking for entry
+		 */
+		breaker: for (int i = 0; i < cloud.length; i++) {
+			for (int j = 0; j < cloud[i].length; j++) {
+				if (cloud[i][j] != null && !cloud[i][j].locked) {
+					seed = cloud[i][j];
+					break breaker;
+				}
+			}
+		}
+		if (seed == null) {
+			return null;
+		}
+		result.add(seed);
+		seed.locked = true;
+		int distance = 1;
+		Optional<Chunk> next;
+		while (result.size() < totalChunks) {
+			/*
+			 * top
+			 */
+			next = getNextChunk(seed, distance);
+			if (next.isEmpty()) {
+				/*
+				 * right
+				 */
+				next = getNextChunk(seed, distance);
+				if (next.isEmpty()) {
+					/*
+					 * bottom
+					 */
+					next = getNextChunk(seed, distance);
+					if (next.isEmpty()) {
+						/*
+						 * left
+						 */
+						next = getNextChunk(seed, distance);
+					}
+				}
+			}
+			if (next.isEmpty()) {
+				updateSide();
+				distance++;
+			} else {
+				distance = 1;
+				Chunk _next = next.get();
+				_next.locked = true;
+				seed = _next;
+				result.add(_next);
+			}
+
+		}
+		return result;
+
+	}
+
+	private Optional<Chunk> getNextChunk(Chunk seed, int distance) {
+		Optional<Chunk> next;
+		switch (currentSide) {
+		case 0:
+			next = searchTop(seed, distance);
+			if (next.isPresent()) {
+				return next;
+			}
+			updateSide();
+			break;
+		case 1:
+			next = searchRight(seed, distance);
+			if (next.isPresent()) {
+				return next;
+			}
+			updateSide();
+			break;
+		case 2:
+			next = searchBot(seed, distance);
+			if (next.isPresent()) {
+				return next;
+			}
+			updateSide();
+			break;
+		case 3:
+			next = searchLeft(seed, distance);
+			if (next.isPresent()) {
+				return next;
+			}
+			updateSide();
+			break;
+		default:
+			break;
+		}
+		return Optional.empty();
+	}
+
+	private void updateSide() {
+		currentSide++;
+		if (currentSide == 4) {
+			currentSide = 0;
+		}
+	}
+
+	/*
+	 * xxx
+	 * o-o
+	 * ooo
+	 */
+	private Optional<Chunk> searchTop(Chunk seed, int distance) {
+		int chunkWidth = seed.chunkPosition.x;
+		int chunkHeight = seed.chunkPosition.y;
+
+		int currentWidth = chunkWidth - distance;
+		int currentHeight = chunkHeight - distance;
+
+		while (currentWidth <= chunkWidth + distance) {
+			if (checkBound(currentWidth, currentHeight)) {
+				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
+						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
+					return Optional.of(allChosedLayersInOneLayer[currentHeight][currentWidth]);
+			}
+			currentWidth++;
+		}
+		return Optional.empty();
+	}
+
+	/*
+	 * oox
+	 * o-x
+	 * oox
+	 */
+	private Optional<Chunk> searchRight(Chunk seed, int distance) {
+		int chunkWidth = seed.chunkPosition.x;
+		int chunkHeight = seed.chunkPosition.y;
+
+		int currentWidth = chunkWidth + distance;
+		int currentHeight = chunkHeight - distance;
+
+		while (currentHeight <= chunkHeight + distance) {
+			if (checkBound(currentWidth, currentHeight)) {
+				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
+						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
+					return Optional.of(allChosedLayersInOneLayer[currentHeight][currentWidth]);
+			}
+			currentHeight++;
+		}
+		return Optional.empty();
+	}
+
+	/*
+	 * ooo
+	 * o-o
+	 * xxx
+	 */
+	private Optional<Chunk> searchBot(Chunk seed, int distance) {
+		int chunkWidth = seed.chunkPosition.x;
+		int chunkHeight = seed.chunkPosition.y;
+
+		int currentWidth = chunkWidth + distance;
+		int currentHeight = chunkHeight + distance;
+
+		while (currentWidth >= chunkWidth - distance) {
+			if (checkBound(currentWidth, currentHeight)) {
+				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
+						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
+					return Optional.of(allChosedLayersInOneLayer[currentHeight][currentWidth]);
+			}
+			currentWidth--;
+		}
+		return Optional.empty();
+	}
+
+	/*
+	 * xoo
+	 * x-o
+	 * xoo
+	 */
+	private Optional<Chunk> searchLeft(Chunk seed, int distance) {
+		int chunkWidth = seed.chunkPosition.x;
+		int chunkHeight = seed.chunkPosition.y;
+
+		int currentWidth = chunkWidth - distance;
+		int currentHeight = chunkHeight + distance;
+
+		while (currentHeight >= chunkHeight - distance) {
+			if (checkBound(currentWidth, currentHeight)) {
+				if (allChosedLayersInOneLayer[currentHeight][currentWidth] != null
+						&& !allChosedLayersInOneLayer[currentHeight][currentWidth].locked)
+					return Optional.of(allChosedLayersInOneLayer[currentHeight][currentWidth]);
+			}
+			currentHeight--;
+		}
+		return Optional.empty();
+	}
+
+	// @Override
+	public List<Chunk> AgetPath() {
 		/*
 		 * result path container
 		 */
@@ -77,6 +276,7 @@ public class SquarePathFinder implements Pathfinder {
 			return null;
 		}
 		result.add(seed);
+		seed.locked = true;
 		int distance = 1;
 		/*
 		 * search next chunk in distance 1 (pixel, chunk, ect)
@@ -115,6 +315,17 @@ public class SquarePathFinder implements Pathfinder {
 		int seedWidth = seed.chunkPosition.x;
 		Chunk next = null;
 		/*
+		 * OOO
+		 * X-O
+		 * OOO
+		 */
+		if (checkBound(seedWidth - 1, seedHeight - 1)) {
+			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+			if (next != null && !next.locked) {
+				return Optional.of(next);
+			}
+		}
+		/*
 		 * XOO
 		 * O-O
 		 * OOO
@@ -137,17 +348,6 @@ public class SquarePathFinder implements Pathfinder {
 			}
 		}
 		/*
-		 * OOO
-		 * O-X
-		 * OOO
-		 */
-		if (checkBound(seedWidth + 1, seedHeight)) {
-			next = allChosedLayersInOneLayer[seedHeight][seedWidth + 1];
-			if (next != null && !next.locked) {
-				return Optional.of(next);
-			}
-		}
-		/*
 		 * OOX
 		 * O-O
 		 * OOO
@@ -160,11 +360,11 @@ public class SquarePathFinder implements Pathfinder {
 		}
 		/*
 		 * OOO
-		 * O-O
-		 * OXO
+		 * O-X
+		 * OOO
 		 */
-		if (checkBound(seedWidth, seedHeight + 1)) {
-			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth];
+		if (checkBound(seedWidth + 1, seedHeight)) {
+			next = allChosedLayersInOneLayer[seedHeight][seedWidth + 1];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}
@@ -182,11 +382,11 @@ public class SquarePathFinder implements Pathfinder {
 		}
 		/*
 		 * OOO
-		 * X-O
-		 * OOO
+		 * O-O
+		 * OXO
 		 */
-		if (checkBound(seedWidth - 1, seedHeight - 1)) {
-			next = allChosedLayersInOneLayer[seedHeight - 1][seedWidth - 1];
+		if (checkBound(seedWidth, seedHeight + 1)) {
+			next = allChosedLayersInOneLayer[seedHeight + 1][seedWidth];
 			if (next != null && !next.locked) {
 				return Optional.of(next);
 			}

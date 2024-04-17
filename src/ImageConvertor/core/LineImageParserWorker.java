@@ -88,8 +88,6 @@ class LineImageParserWorker {
 
 				List<Chunk> pList = new ArrayList<Chunk>();
 
-				float currentLumiance = 0;
-
 				Chunk chunk_1 = new Chunk(chunkHeightPosition, cunkWidthPosition);
 				Chunk chunk_2 = new Chunk(chunkHeightPosition, cunkWidthPosition);
 				Chunk chunk_3 = new Chunk(chunkHeightPosition, cunkWidthPosition);
@@ -110,17 +108,6 @@ class LineImageParserWorker {
 							return null;
 						}
 
-						try {
-							int color = img.getRGB(chunkWidth, chunkHeight);
-							int red = (color >>> 16) & 0xff;
-							int green = (color >>> 8) & 0xff;
-							int blue = color & 0xff;
-							currentLumiance += ((red * 0.2126f) + (green * 0.7152f) + (blue * 0.0722f)) / 255;
-						} catch (ArrayIndexOutOfBoundsException e) {
-							System.out.println(this.getClass().getName() + " - " + e.getStackTrace()[2].getLineNumber()
-									+ " - " + chunkWidth + " - " + chunkHeight + " - " + currentLumiance);
-						}
-
 						/*
 						 * chunk_1.layer = minLum;
 						 * chunk_2.layer = minLum;
@@ -138,16 +125,12 @@ class LineImageParserWorker {
 								inLoopImageWidth, inLoopImageHeight));
 					}
 				}
-				chunk_1.chunkTotalLuminiance = currentLumiance;
-				chunk_2.chunkTotalLuminiance = currentLumiance;
-				chunk_3.chunkTotalLuminiance = currentLumiance;
-				chunk_4.chunkTotalLuminiance = currentLumiance;
 
 				chunk_1.layer = layer;
 				chunk_2.layer = layer;
 				chunk_3.layer = layer;
 				chunk_4.layer = layer;
-				
+
 				Chunk max = pList.stream().max((i1, i2) -> Double.compare(i1.getLength(), i2.getLength())).get();
 
 				if (max.getLength() == 0) {

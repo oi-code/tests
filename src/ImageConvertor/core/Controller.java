@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.ImageIcon;
 
 import ImageConvertor.data.State;
+import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.GCodeCreatorView;
@@ -31,6 +32,7 @@ public class Controller {
 	private boolean isPathsCreated;
 	private boolean isProcessWindowShowed;
 	private Pathfinder workerManager;
+	private ImageParser imageParser;
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
@@ -210,10 +212,13 @@ public class Controller {
 			Thread view = new Thread(new ViewProccessStatus(this, queue));
 			view.setDaemon(true);
 			view.start();
-			//LineImageParserManager parser = new LineImageParserManager(this, queue);
-			 LuminImageParserWorker parser = new LuminImageParserWorker(this);
+			// LineImageParserManager parser = new LineImageParserManager(this, queue);
+			// LuminImageParserWorker parser = new LuminImageParserWorker(this);
+			if (imageParser instanceof LineImageParserManager) {
+				((LineImageParserManager) imageParser).setQueue(queue);
+			}
 
-			STATE.setAllLayers(parser.doTask());
+			STATE.setAllLayers(imageParser.doTask());
 			if (isCanceled) {
 				isProcessed = false;
 			} else {
@@ -332,6 +337,21 @@ public class Controller {
 
 	public void setProcessWindowShowed(boolean isProcessWindowShowed) {
 		this.isProcessWindowShowed = isProcessWindowShowed;
+	}
+
+	public void setProcessor(String string) {
+		switch (string) {
+		case "Line": {
+			imageParser = new LineImageParserManager(this);
+			break;
+		}
+		case "Lumin": {
+			imageParser = new LuminImageParserWorker(this);
+			break;
+		}
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + string);
+		}
 	}
 
 }

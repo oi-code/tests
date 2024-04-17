@@ -14,9 +14,9 @@ import ImageConvertor.views.desktop.View;
 public class GCodeGenerator {
 	private float pixelSize = 0.207f;
 	private short[] a4Sheet = new short[] { 210, 297 };
-	private String up = "M5 S0";
-	private String down = "M3 S20";
-	private String delayString = "G4 P0.1";
+	private String up;// = "M5 S0";
+	private String down;// = "M3 S20";
+	private String delayString;// = "G4 P0.1";
 
 	Controller controller;
 	private List<List<Chunk>> path;

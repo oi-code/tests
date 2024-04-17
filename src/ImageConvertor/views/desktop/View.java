@@ -2,6 +2,7 @@ package ImageConvertor.views.desktop;
 
 import java.awt.CardLayout;
 import java.awt.GridLayout;
+import java.awt.TexturePaint;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 
 import ImageConvertor.core.Controller;
+import ImageConvertor.data.State;
 
 @SuppressWarnings(value = "serial")
 public class View extends JFrame {
@@ -138,6 +140,7 @@ public class View extends JFrame {
 		components.add(getStrokeFactorContainer());
 		components.add(getLayersContainer());
 		components.add(getFigureChoserContainer());
+		components.add(getImageProcessorContainer());
 		components.add(getRndChoserContainer());
 
 		components.add(getImageLoaderButton());
@@ -269,6 +272,52 @@ public class View extends JFrame {
 		return chooseFigure;
 	}
 
+	private JComponent getImageProcessorContainer() {
+		JPanel imageProcessor = new JPanel(new GridLayout(1, 2));
+		JTextField imageProcessorText = new JTextField("Image Processor");
+		imageProcessorText.setEditable(false);
+		imageProcessorText.setFocusable(false);
+		imageProcessorText.setBorder(null);
+		imageProcessorText.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+		String[] arr = { "Line", "Lumin" };
+		/*
+		 * default image processor will be chosed after loading image
+		 * {@link ImageConvertor.views.desktop#getImageLoaderButton()}
+		 */
+		JSpinner figSpinner = new JSpinner(new SpinnerListModel(arr));
+		figSpinner.setBorder(null);
+		figSpinner.setEnabled(false);
+		JComponent figEditor = figSpinner.getEditor();
+		JSpinner.DefaultEditor spinnerEditor = (JSpinner.DefaultEditor) figEditor;
+		spinnerEditor.getTextField().setHorizontalAlignment(JTextField.CENTER);
+		spinnerEditor.getTextField().setEditable(false);
+		figSpinner.addChangeListener(e -> {
+			controller.setProcessor(figSpinner.getValue().toString());
+		});
+		imageProcessor.add(imageProcessorText);
+		imageProcessor.add(figSpinner);
+
+		Thread t = new Thread(() -> {
+			while (!Thread.currentThread().isInterrupted()) {
+				if (State.getInstance().isLoaded()) {
+					figSpinner.setEnabled(true);
+					Thread.currentThread().interrupt();
+				} else {
+					try {
+						TimeUnit.MILLISECONDS.sleep(500);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+		t.setDaemon(true);
+		t.start();
+
+		return imageProcessor;
+
+	}
+
 	private JComponent getRndChoserContainer() {
 		JPanel rndChooser = new JPanel(new GridLayout(1, 2));
 		JTextField rndChooserText = new JTextField(controller.getLocaleText("rnd_for_dr"));
@@ -310,6 +359,10 @@ public class View extends JFrame {
 			JPanel temp;
 			rightContainer.removeAll();
 			if (controller.isLoaded()) {
+				/*
+				 * default image processor
+				 */
+				controller.setProcessor("Line");
 				temp = new PreView(controller);
 			} else {
 				temp = stubImage;
@@ -366,7 +419,7 @@ public class View extends JFrame {
 	private JComponent getConstructPathButton() {
 		JButton constructPath = new JButton(controller.getLocaleText("construct_path"));
 		constructPath.setFocusable(false);
-		constructPath.addActionListener(e -> {			
+		constructPath.addActionListener(e -> {
 			List<Float> settings = new AlgorithmSettingsView(controller).getSettings();
 			controller.createPath(settings);
 		});
@@ -387,7 +440,7 @@ public class View extends JFrame {
 	private JComponent createGCodeButton() {
 		JButton gcode = new JButton(controller.getLocaleText("GCODE"));
 		gcode.setFocusable(false);
-		gcode.addActionListener(e -> {			
+		gcode.addActionListener(e -> {
 			controller.createGCode();
 		});
 		buttonContainer.put("creategcode", gcode);
@@ -405,13 +458,13 @@ public class View extends JFrame {
 					buttonContainer.values().forEach(e -> e.setEnabled(false));
 					continue;
 				}
-				if (!controller.isLoaded()&&!controller.isCanceled()) {
+				if (!controller.isLoaded() && !controller.isCanceled()) {
 					buttonContainer.entrySet().stream().filter(e -> !e.getKey().equals("load"))
 							.forEach(e -> e.getValue().setEnabled(false));
 				} else {
 					buttonContainer.get("proc").setEnabled(true);
 					buttonContainer.get("load").setEnabled(true);
-					if (controller.isProcessed()&&!controller.isCanceled()) {
+					if (controller.isProcessed() && !controller.isCanceled()) {
 						buttonContainer.get("save").setEnabled(true);
 						buttonContainer.get("createpath").setEnabled(true);
 						if (controller.isPatsCreated()) {

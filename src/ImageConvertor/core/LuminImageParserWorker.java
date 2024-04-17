@@ -7,10 +7,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.data.Direction;
 
-public class LuminImageParserWorker {
+public class LuminImageParserWorker implements ImageParser{
 
 	private BufferedImage image;
 	private int chunkSize;
