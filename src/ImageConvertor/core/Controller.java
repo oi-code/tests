@@ -33,6 +33,7 @@ public class Controller {
 	private boolean isProcessWindowShowed;
 	private Pathfinder workerManager;
 	private ImageParser imageParser;
+	private String stringImageParser;
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
@@ -340,6 +341,7 @@ public class Controller {
 	}
 
 	public void setProcessor(String string) {
+		stringImageParser = string;
 		switch (string) {
 		case "Line": {
 			imageParser = new LineImageParserManager(this);
@@ -352,6 +354,10 @@ public class Controller {
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + string);
 		}
+	}
+
+	public String getProcessor() {
+		return stringImageParser;
 	}
 
 }

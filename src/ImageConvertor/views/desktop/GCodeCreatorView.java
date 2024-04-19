@@ -58,7 +58,7 @@ public class GCodeCreatorView extends JDialog {
 		JTextField input = new JTextField();
 		input.setAlignmentX(CENTER_ALIGNMENT);
 		input.setAlignmentY(CENTER_ALIGNMENT);
-		input.setText("M5 S0");
+		input.setText("M5");
 		input.setFont(text.getFont().deriveFont(size));
 
 		container.add(text);
@@ -89,7 +89,7 @@ public class GCodeCreatorView extends JDialog {
 		JLabel text = new JLabel(controller.getLocaleText("delay"));
 		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		JTextField input = new JTextField();
-		input.setText("G4 P0.1");
+		input.setText("G4 P0.2");
 		input.setFont(text.getFont().deriveFont(size));
 
 		container.add(text);

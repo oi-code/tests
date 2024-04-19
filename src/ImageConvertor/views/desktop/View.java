@@ -281,7 +281,7 @@ public class View extends JFrame {
 		imageProcessorText.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		String[] arr = { "Line", "Lumin" };
 		/*
-		 * default image processor will be chosed after loading image
+		 * default image processor will be chose after loading image
 		 * {@link ImageConvertor.views.desktop#getImageLoaderButton()}
 		 */
 		JSpinner figSpinner = new JSpinner(new SpinnerListModel(arr));
@@ -300,6 +300,7 @@ public class View extends JFrame {
 		Thread t = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted()) {
 				if (State.getInstance().isLoaded()) {
+					controller.setProcessor(figSpinner.getValue().toString());
 					figSpinner.setEnabled(true);
 					Thread.currentThread().interrupt();
 				} else {
@@ -347,22 +348,14 @@ public class View extends JFrame {
 		JButton imageChooser = new JButton(controller.getLocaleText("chose_image"));
 		imageChooser.setFocusable(false);
 		imageChooser.addActionListener(e -> {
-
-			/*
-			 * if (controller.isProcessed()) {
-			 * clearMemory();
-			 * }
-			 */
-
 			setTitle(controller.getLocaleText("program_name"));
 			controller.loadImage();
+			if (controller.getProcessor() != null) {
+				controller.setProcessor(controller.getProcessor());
+			}
 			JPanel temp;
 			rightContainer.removeAll();
 			if (controller.isLoaded()) {
-				/*
-				 * default image processor
-				 */
-				controller.setProcessor("Line");
 				temp = new PreView(controller);
 			} else {
 				temp = stubImage;
@@ -389,7 +382,9 @@ public class View extends JFrame {
 			int layers = controller.getLayers();
 			String figure = controller.getFigure();
 			boolean rnd = controller.isRandom();
-
+			if (controller.getProcessor() != null) {
+				controller.setProcessor(controller.getProcessor());
+			}
 			controller.setChunkSize(chunk);
 			controller.setStroke(strokefactor);
 			controller.setLayers(layers);
