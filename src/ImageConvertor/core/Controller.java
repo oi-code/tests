@@ -20,7 +20,7 @@ import ImageConvertor.data.State;
 import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
-import ImageConvertor.views.desktop.GCodeCreatorView;
+import ImageConvertor.views.desktop.GCodeGeneratorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
 import ImageConvertor.views.desktop.ViewProccessStatus;
@@ -237,7 +237,7 @@ public class Controller {
 	}
 
 	public void createGCode() {
-		GCodeCreatorView gview = new GCodeCreatorView(this);
+		GCodeGeneratorView gview = new GCodeGeneratorView(this);
 		List<String> settings = gview.getSettings();
 		if (settings == null) {
 			return;

@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
@@ -59,7 +60,19 @@ public class GCodeGenerator {
 		down = settings.get(1);
 		delayString = settings.get(2);
 		scale = Float.valueOf(settings.get(3)).floatValue();
-
+		/*
+		 * matrixes.stream().forEach(e -> {
+		 * int count = 0;
+		 * for (int i = 0; i < e.length; i++) {
+		 * for (int k = 0; k < e[i].length; k++) {
+		 * if (e[i][k] != null) {
+		 * count++;
+		 * }
+		 * }
+		 * }
+		 * System.out.println(count);
+		 * });
+		 */
 		createGCode();
 		saveGCode();
 	}
@@ -80,6 +93,8 @@ public class GCodeGenerator {
 		int maxConnectedRange = 7;
 
 		float maxCalcRange = chunkSize * maxConnectedRange;
+
+		ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
 		String pathTemplate = "G1 Y%f X%f F20000\n";
 		sb.append("G21\n");
@@ -105,11 +120,30 @@ public class GCodeGenerator {
 				matrixes.stream().forEach(matrix -> {
 					Chunk pathChunk = matrix[cur.chunkPosition.y][cur.chunkPosition.x];
 					if (pathChunk != null) {
-						double curX = pathChunk.startPoint.getX() * pixelSize;
-						double curY = pathChunk.startPoint.getY() * pixelSize;
-						// double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
-						// double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
-						sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+						/*
+						 * double curX = pathChunk.startPoint.getX() * pixelSize;
+						 * double curY = pathChunk.startPoint.getY() * pixelSize;
+						 * double curXe = pathChunk.endPoint.getX() * pixelSize;
+						 * double curYe = pathChunk.endPoint.getY() * pixelSize;
+						 */
+
+						if (controller.isRandom()) {
+							double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
+							double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
+							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+						} else {
+							double curX = pathChunk.startPoint.x * pixelSize;
+							double curY = pathChunk.endPoint.y * pixelSize;
+							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+						}
+
+						/*
+						 * if (controller.isRandom()) {
+						 * double curXe = pathChunk.endPoint.x * pixelSize * chunkSize;
+						 * double curYe = pathChunk.endPoint.y * pixelSize * chunkSize;
+						 * sb.append(String.format(pathTemplate, curXe * scaler, curYe * scaler));
+						 * }
+						 */
 					}
 				});
 				/*

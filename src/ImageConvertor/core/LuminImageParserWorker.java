@@ -11,7 +11,7 @@ import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.data.Direction;
 
-public class LuminImageParserWorker implements ImageParser{
+public class LuminImageParserWorker implements ImageParser {
 
 	private BufferedImage image;
 	private int chunkSize;
@@ -35,8 +35,8 @@ public class LuminImageParserWorker implements ImageParser{
 
 		this.layers = controller.getLayers();
 		matrix = new Chunk[matrixHeight][matrixWidth];
-		//System.out.println(imageWidth+" "+imageHeight);
-		//System.out.println(matrixWidth+" "+matrixHeight);
+		// System.out.println(imageWidth+" "+imageHeight);
+		// System.out.println(matrixWidth+" "+matrixHeight);
 	}
 
 	public List<List<Chunk>> doTask() {
@@ -68,7 +68,7 @@ public class LuminImageParserWorker implements ImageParser{
 				result.get(chosedLayerIndex).add(currentChunk);
 			}
 		}
-		//result.stream().map(e -> e.size()).forEach(System.out::println);
+		// result.stream().map(e -> e.size()).forEach(System.out::println);
 		return result;
 	}
 
@@ -78,8 +78,15 @@ public class LuminImageParserWorker implements ImageParser{
 			for (int out_j = 0; out_j < imageWidth; out_j += chunkSize) {
 				Chunk currentChunk = new Chunk((short) (out_i / chunkSize), (short) (out_j / chunkSize));
 				currentChunk.direction = Direction.RIGHT;
+				/*
+				 * currentChunk.startPoint = new Point(out_j - (tlr.nextInt(chunkSize) / 2),
+				 * out_i - (tlr.nextInt(chunkSize) / 2));
+				 * currentChunk.endPoint = new Point(out_j + (tlr.nextInt(chunkSize) / 2),
+				 * out_i + tlr.nextInt(chunkSize) + (tlr.nextInt(chunkSize) / 2));
+				 */
 				currentChunk.startPoint = new Point(out_j, out_i);
-				currentChunk.endPoint = new Point(out_j + tlr.nextInt(chunkSize), out_i + tlr.nextInt(chunkSize));
+				currentChunk.endPoint = new Point(out_j, out_i);
+				//currentChunk.endPoint = new Point(out_j + tlr.nextInt(chunkSize), out_i + tlr.nextInt(chunkSize));
 				float currentChunkLuminiance = 0f;
 				for (int inner_i = out_i; inner_i < out_i + chunkSize; inner_i++) {
 					for (int inner_j = out_j; inner_j < out_j + chunkSize; inner_j++) {

@@ -17,7 +17,7 @@ import javax.swing.JTextField;
 import ImageConvertor.core.Controller;
 
 @SuppressWarnings("serial")
-public class GCodeCreatorView extends JDialog {
+public class GCodeGeneratorView extends JDialog {
 
 	private List<Component> components = new ArrayList<>();
 	private List<String> settings;
@@ -26,7 +26,7 @@ public class GCodeCreatorView extends JDialog {
 	int width = 500;
 	int height = 200;
 
-	public GCodeCreatorView(Controller c) {
+	public GCodeGeneratorView(Controller c) {
 		controller = c;
 		getPenUpCommand();
 		getPenDownCommand();

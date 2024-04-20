@@ -119,20 +119,23 @@ public class ParsedImagePreview extends JPanel
 			controller.getChosedLayersForDraw().add(currentDrawingList);
 			for (Chunk innerCurrentPoints : currentDrawingList) {
 
-				if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
-					//continue;
-				}
+				// if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
+				// continue;
+				// }
 
 				int x1 = innerCurrentPoints.startPoint.x / count;
 				int y1 = innerCurrentPoints.startPoint.y / count;
 				int x2 = innerCurrentPoints.endPoint.x / count;
 				int y2 = innerCurrentPoints.endPoint.y / count;
-
-				if (controller.getLocaleText("circle").equals(figure)) {
+				if (controller.getLocaleText("line").equals(figure)) {
+					if (controller.getProcessor().equals("Lumin") && s > 2) {
+						g2.fillRect(x1, y1, 2, 2);
+					} else {
+						g2.drawLine(x1, y1, x2, y2);
+					}
+				} else if (controller.getLocaleText("circle").equals(figure)) {
 					int rnd = (int) innerCurrentPoints.getLength() + ThreadLocalRandom.current().nextInt(s);
 					g2.drawArc(x1, y1, rnd, rnd, 0, 360);
-				} else if (controller.getLocaleText("line").equals(figure)) {
-					g2.drawLine(x1, y1, x2, y2);
 				} else if (controller.getLocaleText("x").equals(figure)) {
 					g2.drawLine(x1, y1, x2, y2);
 					g2.drawLine(x1, y2, x2, y1);
