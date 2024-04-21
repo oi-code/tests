@@ -32,6 +32,7 @@ public class GCodeGeneratorView extends JDialog {
 		getPenDownCommand();
 		getDelayCommand();
 		getScaleCommand();
+		getFeedrateCommand();
 		getButtons();
 		setTitle(controller.getLocaleText("create_gcode"));
 		setModal(true);
@@ -111,6 +112,22 @@ public class GCodeGeneratorView extends JDialog {
 		container.add(input);
 		components.add(container);
 	}
+	
+	private void getFeedrateCommand() {
+		JPanel container = new JPanel();
+		container.setLayout(new GridLayout(1, 2));
+
+		//JLabel text = new JLabel(controller.getLocaleText("feedrate"));
+		JLabel text = new JLabel("feedrate");
+		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+		JTextField input = new JTextField();
+		input.setText("F10000");
+		input.setFont(text.getFont().deriveFont(size));
+
+		container.add(text);
+		container.add(input);
+		components.add(container);
+	}
 
 	private void getButtons() {
 		JPanel container = new JPanel();
@@ -118,17 +135,17 @@ public class GCodeGeneratorView extends JDialog {
 		
 		JButton okButton = new JButton(controller.getLocaleText("ok"));		
 		okButton.addActionListener((e) -> {
-			List<String>temp=new ArrayList<>();
+			settings=new ArrayList<>();
 			for (Component c : components) {
 				if (c instanceof JPanel panel) {
 					for (Component jp : panel.getComponents()) {
 						if (jp instanceof JTextField text) {
-							temp.add(text.getText());
+							settings.add(text.getText());
 						}
 					}
 				}
 			}
-			settings=temp;
+			//settings=temp;
 			//System.out.println(settings);
 			//dispose();
 			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));

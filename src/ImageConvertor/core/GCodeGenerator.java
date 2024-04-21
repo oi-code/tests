@@ -18,6 +18,7 @@ public class GCodeGenerator {
 	private String up;// = "M5 S0";
 	private String down;// = "M3 S20";
 	private String delayString;// = "G4 P0.1";
+	private String feedrate;
 
 	Controller controller;
 	private List<List<Chunk>> path;
@@ -60,6 +61,7 @@ public class GCodeGenerator {
 		down = settings.get(1);
 		delayString = settings.get(2);
 		scale = Float.valueOf(settings.get(3)).floatValue();
+		feedrate = settings.get(4);
 		/*
 		 * matrixes.stream().forEach(e -> {
 		 * int count = 0;
@@ -94,11 +96,11 @@ public class GCodeGenerator {
 
 		float maxCalcRange = chunkSize * maxConnectedRange;
 
-		ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-		String pathTemplate = "G1 Y%f X%f F20000\n";
+		// String pathTemplate = "G1 Y%f X%f F90000\n";
+		String pathTemplate = "G1 Y%f X%f\n";
 		sb.append("G21\n");
 		sb.append("G90\n");
+		sb.append("G94 " + feedrate + "\n");
 		sb.append(servoUpCutPath);
 		boolean isUp = false;
 		for (List<Chunk> list : path) {
@@ -128,12 +130,15 @@ public class GCodeGenerator {
 						 */
 
 						if (controller.isRandom()) {
-							double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
-							double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
-							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
-						} else {
 							double curX = pathChunk.startPoint.x * pixelSize;
 							double curY = pathChunk.endPoint.y * pixelSize;
+							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
+
+						} else {
+							//double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
+							//double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
+							double curX = pathChunk.endPoint.x * pixelSize;
+							double curY = pathChunk.startPoint.y * pixelSize;
 							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 						}
 

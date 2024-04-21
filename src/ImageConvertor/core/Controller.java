@@ -108,9 +108,9 @@ public class Controller {
 
 	public String getFileName() {
 		String resFileName = "";
-		resFileName = STATE.getFileName() + "_";
-		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.ENGLISH);
-		resFileName += sdf.format(new Date()).toString() + resFileName;
+		resFileName = STATE.getFileName() + ", ";
+		SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy, HH-mm-ss", Locale.ENGLISH);
+		resFileName += sdf.format(new Date()).toString();
 		return resFileName;
 	}
 
