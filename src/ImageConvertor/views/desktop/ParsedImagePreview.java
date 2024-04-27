@@ -22,17 +22,22 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import ImageConvertor.core.Bhuas;
 import ImageConvertor.core.Controller;
-import ImageConvertor.data.Direction;
 import ImageConvertor.data.Chunk;
 
 @SuppressWarnings(value = "serial")
@@ -54,8 +59,10 @@ public class ParsedImagePreview extends JPanel
 	int height;
 	int count = 1;
 	int layerCount = -1;
+	AtomicBoolean isImageChanged = new AtomicBoolean(false);
 
 	public ParsedImagePreview(Controller controllerr) {
+
 		controller = controllerr;
 		allLayersContainer = controllerr.getAllLayers();
 		s = controller.getChunkSize();
@@ -71,6 +78,30 @@ public class ParsedImagePreview extends JPanel
 
 		getLayersBoxFrame();
 
+		/*
+		 * JLabel j = new JLabel();
+		 * ImageIcon icon = createImage();
+		 * j.setIcon(icon);
+		 * add(j);
+		 * 
+		 * Thread helper = new Thread(() -> {
+		 * while (mainPanel.isVisible()) {
+		 * if (isImageChanged.get()) {
+		 * j.setIcon(createImage());
+		 * isImageChanged.set(false);
+		 * j.repaint();
+		 * System.out.println("image changed");
+		 * }
+		 * try {
+		 * TimeUnit.MILLISECONDS.sleep(300);
+		 * } catch (InterruptedException e) {
+		 * e.printStackTrace();
+		 * }
+		 * }
+		 * });
+		 * helper.setDaemon(true);
+		 * helper.start();
+		 */
 	}
 
 	@Override
@@ -97,6 +128,7 @@ public class ParsedImagePreview extends JPanel
 		setOpaque(false);
 		layerCount = -1;
 		setSize(width, height);
+
 		Graphics2D g2 = (Graphics2D) g;
 		Color c = new Color(0f, 0f, 0f, 0f);
 		g2.setColor(c);
@@ -119,7 +151,8 @@ public class ParsedImagePreview extends JPanel
 			controller.getChosedLayersForDraw().add(currentDrawingList);
 			for (Chunk innerCurrentPoints : currentDrawingList) {
 
-				// if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s / 2) {
+				// if (innerCurrentPoints.direction == Direction.STUB || innerCurrentPoints.getLength() < s /
+				// 2){
 				// continue;
 				// }
 
@@ -142,8 +175,8 @@ public class ParsedImagePreview extends JPanel
 				} else {
 				}
 			}
-
 		}
+
 	}
 
 	public void showImage() {
@@ -167,7 +200,7 @@ public class ParsedImagePreview extends JPanel
 		if (controller.isCanceled()) {
 			mainPanel.setVisible(false);
 			layersBox.setVisible(false);
-		}
+		}		
 	}
 
 	public void removeListeners() {
@@ -219,7 +252,6 @@ public class ParsedImagePreview extends JPanel
 			setLocation(X, Y);
 		} catch (NullPointerException exc) {
 		}
-		// repaint();
 	}
 
 	@Override
@@ -308,6 +340,7 @@ public class ParsedImagePreview extends JPanel
 					box.setSelected(false);
 				}
 			}
+			isImageChanged.set(true);
 		});
 		but = button;
 		return button;
@@ -329,6 +362,9 @@ public class ParsedImagePreview extends JPanel
 			temp.setFocusable(false);
 			boxes.add(temp);
 			topPanel.add(temp);
+			temp.addActionListener(event -> {
+				isImageChanged.set(true);
+			});
 		}
 		int select = boxes.size() / 4;
 		boxes.get(select).setSelected(true);

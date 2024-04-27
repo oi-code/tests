@@ -20,6 +20,7 @@ import ImageConvertor.data.State;
 import ImageConvertor.core.coreInterfaces.ImageParser;
 import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
+import ImageConvertor.views.desktop.AbstractImagePreview;
 import ImageConvertor.views.desktop.GCodeGeneratorView;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
@@ -70,11 +71,11 @@ public class Controller {
 		STATE.setChunks(chunks);
 	}
 
-	public ParsedImagePreview getParsedImage() {
+	public AbstractImagePreview getParsedImage() {
 		return STATE.getParsedImage();
 	}
 
-	public void setParsedImage(ParsedImagePreview parsedImage) {
+	public void setParsedImage(AbstractImagePreview parsedImage) {
 		STATE.setParsedImage(parsedImage);
 	}
 
@@ -226,8 +227,10 @@ public class Controller {
 				isProcessed = true;
 			}
 			view.interrupt();
-			STATE.setParsedImage(new ParsedImagePreview(this));
-			STATE.getParsedImage().showImage();
+			Bhuas b=new Bhuas(this);
+			STATE.setParsedImage(b);
+			//STATE.setParsedImage(new ParsedImagePreview(this));			
+			//STATE.getParsedImage().showImage();			
 		});
 
 		worker.setName("Controller support thread parseImage");
@@ -266,16 +269,7 @@ public class Controller {
 	}
 
 	public void saveImage() {
-		STATE.getParsedImage().saveImage();
-	}
-
-	public void setNullParser() {
-		if (STATE.getParsedImage() == null) {
-			return;
-		}
-		STATE.getParsedImage().removeListeners();
-		STATE.setParsedImage(null);
-
+		STATE.getParsedImage().saveImage(this);
 	}
 
 	public boolean isRandom() {

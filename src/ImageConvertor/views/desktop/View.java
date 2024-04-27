@@ -305,7 +305,7 @@ public class View extends JFrame {
 					Thread.currentThread().interrupt();
 				} else {
 					try {
-						TimeUnit.MILLISECONDS.sleep(500);
+						TimeUnit.MILLISECONDS.sleep(200);
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
 					}

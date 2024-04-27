@@ -9,6 +9,7 @@ import java.util.Set;
 
 import javax.swing.ImageIcon;
 
+import ImageConvertor.views.desktop.AbstractImagePreview;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 
 public class State {
@@ -16,7 +17,7 @@ public class State {
 	private short chunkSize;
 	private short imageWidth, imageHeight;
 	private float stroke;
-	private ParsedImagePreview parsedImage;
+	private AbstractImagePreview parsedImage;
 	private ImageIcon imageIcon;
 	private String fileName;
 	private String figure;
@@ -103,11 +104,11 @@ public class State {
 		this.stroke = stroke;
 	}
 
-	public ParsedImagePreview getParsedImage() {
+	public AbstractImagePreview getParsedImage() {
 		return parsedImage;
 	}
 
-	public void setParsedImage(ParsedImagePreview parsedImage) {
+	public void setParsedImage(AbstractImagePreview parsedImage) {
 		this.parsedImage = parsedImage;
 	}
 
