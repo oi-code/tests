@@ -36,7 +36,7 @@ public class ParsedImagePreview_v2 extends AbstractImagePreview {
 		Color c = new Color(0f, 0f, 0f, 0f);
 		g2.setColor(c);
 		g2.fillRect(0, 0, width, height);
-		g2.setColor(Color.BLUE);
+		g2.setColor(new Color(0, 191, 255));
 		g2.setStroke(new BasicStroke(1));
 		int layer = -1;
 		chosedLayersContainer.clear();

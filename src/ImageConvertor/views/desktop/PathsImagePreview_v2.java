@@ -22,7 +22,7 @@ public class PathsImagePreview_v2 extends AbstractImagePreview {
 	@Override
 	protected void setDrawingContainers() {
 		this.allLayersContainer = controller.getPathsPointList();
-		this.chosedLayersContainer = controller.getFinalList();
+		//this.chosedLayersContainer = controller.getFinalList();
 	}
 
 	@Override
@@ -35,14 +35,14 @@ public class PathsImagePreview_v2 extends AbstractImagePreview {
 		g2.setColor(Color.GRAY);
 		g2.setStroke(new BasicStroke(1));
 		int layer = -1;
-		controller.getFinalList().clear();
+		//controller.getFinalList().clear();
 		for (List<Chunk> list : allLayersContainer) {
 			layer++;
 			if (!boxes.get(layer).isSelected())
 				continue;
 			if (list.size() == 0)
 				continue;
-			controller.getFinalList().add(list);
+			//controller.getFinalList().add(list);
 			Chunk prev = list.get(0);
 			for (Chunk cur : list) {
 				if (controller.isRandom()) {
