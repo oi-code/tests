@@ -79,7 +79,7 @@ public abstract class AbstractImagePreview extends JFrame
 		this.defaultImageHeight = height;
 		this.defaultImageWidth = width;
 
-		setDrawingContainers();
+		setDrawingSources();
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setTitle(controller.getLocaleText("img_prev"));
 		setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
@@ -100,7 +100,7 @@ public abstract class AbstractImagePreview extends JFrame
 
 	abstract protected void updateImage();
 
-	abstract protected void setDrawingContainers();
+	abstract protected void setDrawingSources();
 
 	private void resizeImage() {
 		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);

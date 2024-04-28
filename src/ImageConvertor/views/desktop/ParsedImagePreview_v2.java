@@ -24,7 +24,7 @@ public class ParsedImagePreview_v2 extends AbstractImagePreview {
 	}
 
 	@Override
-	protected void setDrawingContainers() {
+	protected void setDrawingSources() {
 		this.allLayersContainer = new ArrayList<List<Chunk>>(controller.getAllLayers());
 		this.chosedLayersContainer = controller.getChosedLayersForDraw();
 	}

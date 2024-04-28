@@ -20,13 +20,13 @@ public class PathsImagePreview_v2 extends AbstractImagePreview {
 	}
 
 	@Override
-	protected void setDrawingContainers() {
+	protected void setDrawingSources() {
 		this.allLayersContainer = controller.getPathsPointList();
-		//this.chosedLayersContainer = controller.getFinalList();
+		this.chosedLayersContainer=controller.getFinalList();
 	}
 
 	@Override
-	protected void updateImage() {		
+	protected void updateImage() {
 		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = newImage.createGraphics();
 		Color c = new Color(0f, 0f, 0f, 0f);
@@ -35,14 +35,14 @@ public class PathsImagePreview_v2 extends AbstractImagePreview {
 		g2.setColor(Color.GRAY);
 		g2.setStroke(new BasicStroke(1));
 		int layer = -1;
-		//controller.getFinalList().clear();
+		chosedLayersContainer.clear();
 		for (List<Chunk> list : allLayersContainer) {
 			layer++;
 			if (!boxes.get(layer).isSelected())
 				continue;
 			if (list.size() == 0)
 				continue;
-			//controller.getFinalList().add(list);
+			chosedLayersContainer.add(list);
 			Chunk prev = list.get(0);
 			for (Chunk cur : list) {
 				if (controller.isRandom()) {
