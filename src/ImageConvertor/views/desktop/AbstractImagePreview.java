@@ -44,7 +44,9 @@ import ImageConvertor.data.Chunk;
 public abstract class AbstractImagePreview extends JFrame
 		implements MouseMotionListener, MouseWheelListener, MouseListener, WindowListener {
 
+	protected Controller controller;
 	protected List<List<Chunk>> allLayersContainer;
+	protected List<List<Chunk>> chosedLayersContainer;
 	protected BufferedImage currentImage = null;
 	protected Short chunkSize;
 	protected String figure;
@@ -68,7 +70,8 @@ public abstract class AbstractImagePreview extends JFrame
 		/*
 		 * avoid {@link java.util.ConcurrentModificationException}
 		 */
-		this.allLayersContainer = new ArrayList<List<Chunk>>(controller.getAllLayers());
+		System.out.println(this.getClass().getSimpleName() + " created");
+		this.controller = controller;
 		this.chunkSize = controller.getChunkSize();
 		this.figure = controller.getFigure();
 		this.width = controller.getImageWidth() - (controller.getImageWidth() % chunkSize);
@@ -76,6 +79,7 @@ public abstract class AbstractImagePreview extends JFrame
 		this.defaultImageHeight = height;
 		this.defaultImageWidth = width;
 
+		setDrawingContainers();
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setTitle(controller.getLocaleText("img_prev"));
 		setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
@@ -91,11 +95,12 @@ public abstract class AbstractImagePreview extends JFrame
 		startHelperThread();
 		updateImage();
 
-		System.out.println("created");
 		setVisible(true);
 	}
 
 	abstract protected void updateImage();
+
+	abstract protected void setDrawingContainers();
 
 	private void resizeImage() {
 		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -116,8 +121,6 @@ public abstract class AbstractImagePreview extends JFrame
 		Image image = ((ImageIcon) imageContainer.getIcon()).getImage();
 		g2.drawImage(image, 0, 0, null);
 		g2.dispose();
-		//setVisible(false);
-		//layersBox.setVisible(false);
 		try {
 			Path s = Paths.get(View.DESKTOP_PATH.toString() + "\\" + controller.getFileName() + ".png");
 			Files.deleteIfExists(s);
@@ -201,7 +204,6 @@ public abstract class AbstractImagePreview extends JFrame
 				if (isImageChanged.get()) {
 					updateImage();
 					isImageChanged.set(false);
-					System.out.println("image changed");
 				}
 				try {
 					TimeUnit.MILLISECONDS.sleep(300);
@@ -212,8 +214,6 @@ public abstract class AbstractImagePreview extends JFrame
 		});
 		helper.setDaemon(true);
 		helper.start();
-		System.out.println("daemon " + helper.isDaemon());
-
 	}
 
 	@Override

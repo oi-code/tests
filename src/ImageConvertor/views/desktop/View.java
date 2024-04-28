@@ -40,6 +40,9 @@ public class View extends JFrame {
 
 	private static final View INSTANCE = new View();
 
+	AbstractImagePreview imagePreview;
+	AbstractImagePreview pathPreview;
+
 	private View() {
 		super();
 		stubImage = new StubImage();

@@ -176,27 +176,14 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 3;
 				return next;
 			}
-			next = chunk_3(seed);
-			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_4(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 0;
-				return next;
-			}
 			next = chunk_4(seed);
 			if (next.isPresent()) {
 				currentSide = 0;
 				return next;
 			}
-			next = chunk_5(seed);
+			next = chunk_3(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_6(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 1;
+				currentSide = 0;
 				return next;
 			}
 			next = chunk_6(seed);
@@ -204,12 +191,17 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 1;
 				return next;
 			}
-			next = chunk_7(seed);
+			next = chunk_5(seed);
+			if (next.isPresent()) {
+				currentSide = 1;
+				return next;
+			}
+			next = chunk_8(seed);
 			if (next.isPresent()) {
 				currentSide = 2;
 				return next;
 			}
-			next = chunk_8(seed);
+			next = chunk_7(seed);
 			if (next.isPresent()) {
 				currentSide = 2;
 				return next;
@@ -248,10 +240,6 @@ public class SquarePathFinder implements Pathfinder {
 
 			next = chunk_3(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_4(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
 				currentSide = 0;
 				return next;
 			}
@@ -260,23 +248,14 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 0;
 				return next;
 			}
-			next = chunk_5(seed);
-			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_6(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 1;
-				return next;
-			}
 			next = chunk_6(seed);
 			if (next.isPresent()) {
 				currentSide = 1;
 				return next;
 			}
-			next = chunk_7(seed);
+			next = chunk_5(seed);
 			if (next.isPresent()) {
-				currentSide = 2;
+				currentSide = 1;
 				return next;
 			}
 			next = chunk_8(seed);
@@ -284,12 +263,17 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 2;
 				return next;
 			}
-			next = chunk_1(seed);
+			next = chunk_7(seed);
+			if (next.isPresent()) {
+				currentSide = 2;
+				return next;
+			}
+			next = chunk_2(seed);
 			if (next.isPresent()) {
 				currentSide = 3;
 				return next;
 			}
-			next = chunk_2(seed);
+			next = chunk_1(seed);
 			if (next.isPresent()) {
 				currentSide = 3;
 				return next;
@@ -328,10 +312,6 @@ public class SquarePathFinder implements Pathfinder {
 
 			next = chunk_5(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_6(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
 				currentSide = 1;
 				return next;
 			}
@@ -350,26 +330,22 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 2;
 				return next;
 			}
-			next = chunk_1(seed);
-			if (next.isPresent()) {
-				currentSide = 3;
-				return next;
-			}
 			next = chunk_2(seed);
 			if (next.isPresent()) {
 				currentSide = 3;
 				return next;
 			}
-			next = chunk_3(seed);
+			next = chunk_1(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_4(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 0;
+				currentSide = 3;
 				return next;
 			}
 			next = chunk_4(seed);
+			if (next.isPresent()) {
+				currentSide = 0;
+				return next;
+			}
+			next = chunk_3(seed);
 			if (next.isPresent()) {
 				currentSide = 0;
 				return next;
@@ -415,23 +391,14 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 2;
 				return next;
 			}
-			next = chunk_1(seed);
-			if (next.isPresent()) {
-				currentSide = 3;
-				return next;
-			}
 			next = chunk_2(seed);
 			if (next.isPresent()) {
 				currentSide = 3;
 				return next;
 			}
-			next = chunk_3(seed);
+			next = chunk_1(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_4(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 0;
+				currentSide = 3;
 				return next;
 			}
 			next = chunk_4(seed);
@@ -439,16 +406,17 @@ public class SquarePathFinder implements Pathfinder {
 				currentSide = 0;
 				return next;
 			}
-			next = chunk_5(seed);
+			next = chunk_3(seed);
 			if (next.isPresent()) {
-				Optional<Chunk> check = chunk_6(seed);
-				if (check.isPresent()) {
-					next = check;
-				}
-				currentSide = 1;
+				currentSide = 0;
 				return next;
 			}
 			next = chunk_6(seed);
+			if (next.isPresent()) {
+				currentSide = 1;
+				return next;
+			}
+			next = chunk_5(seed);
 			if (next.isPresent()) {
 				currentSide = 1;
 				return next;

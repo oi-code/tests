@@ -22,8 +22,10 @@ import ImageConvertor.core.coreInterfaces.Pathfinder;
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.AbstractImagePreview;
 import ImageConvertor.views.desktop.GCodeGeneratorView;
+import ImageConvertor.views.desktop.ParsedImagePreview_v2;
 import ImageConvertor.views.desktop.ParsedImagePreview;
 import ImageConvertor.views.desktop.PathsImagePreview;
+import ImageConvertor.views.desktop.PathsImagePreview_v2;
 import ImageConvertor.views.desktop.ViewProccessStatus;
 
 public class Controller {
@@ -35,6 +37,10 @@ public class Controller {
 	private Pathfinder workerManager;
 	private ImageParser imageParser;
 	private String stringImageParser;
+
+	AbstractImagePreview imagePreview;
+	AbstractImagePreview pathPreview;
+
 	public static final int N_THREADS = Runtime.getRuntime().availableProcessors();
 	private static final State STATE = State.getInstance();
 
@@ -69,14 +75,6 @@ public class Controller {
 
 	public void setChunks(int chunks) {
 		STATE.setChunks(chunks);
-	}
-
-	public AbstractImagePreview getParsedImage() {
-		return STATE.getParsedImage();
-	}
-
-	public void setParsedImage(AbstractImagePreview parsedImage) {
-		STATE.setParsedImage(parsedImage);
 	}
 
 	public List<List<Chunk>> getAllLayers() {
@@ -147,6 +145,39 @@ public class Controller {
 		return STATE.isLoaded();
 	}
 
+	public void parseImage() {
+		isProcessed = false;
+		isCanceled = false;
+		Thread worker = new Thread(() -> {
+			ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
+			Thread view = new Thread(new ViewProccessStatus(this, queue));
+			view.setDaemon(true);
+			view.start();
+			// LineImageParserManager parser = new LineImageParserManager(this, queue);
+			// LuminImageParserWorker parser = new LuminImageParserWorker(this);
+			if (imageParser instanceof LineImageParserManager) {
+				((LineImageParserManager) imageParser).setQueue(queue);
+			}
+
+			STATE.setAllLayers(imageParser.doTask());
+			if (isCanceled) {
+				isProcessed = false;
+			} else {
+				isProcessed = true;
+			}
+			view.interrupt();
+			ParsedImagePreview_v2 b = new ParsedImagePreview_v2(this);
+			// STATE.setParsedImage(b);
+			// STATE.setParsedImage(new ParsedImagePreview(this));
+			// STATE.getParsedImage().showImage();
+		});
+
+		worker.setName("Controller support thread parseImage");
+		worker.setDaemon(true);
+		worker.start();
+
+	}
+
 	public void createPath(List<Float> settings) {
 		isProcessed = false;
 		isCanceled = false;
@@ -197,45 +228,13 @@ public class Controller {
 				isPathsCreated = true;
 			}
 			view.interrupt();
-			new PathsImagePreview(this).showImage();
+			//new PathsImagePreview(this).showImage();
+			new PathsImagePreview_v2(this);
 		});
 
 		t.setName("Controller support thread pathCreate");
 		t.setDaemon(true);
 		t.start();
-
-	}
-
-	public void parseImage() {
-		isProcessed = false;
-		isCanceled = false;
-		Thread worker = new Thread(() -> {
-			ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
-			Thread view = new Thread(new ViewProccessStatus(this, queue));
-			view.setDaemon(true);
-			view.start();
-			// LineImageParserManager parser = new LineImageParserManager(this, queue);
-			// LuminImageParserWorker parser = new LuminImageParserWorker(this);
-			if (imageParser instanceof LineImageParserManager) {
-				((LineImageParserManager) imageParser).setQueue(queue);
-			}
-
-			STATE.setAllLayers(imageParser.doTask());
-			if (isCanceled) {
-				isProcessed = false;
-			} else {
-				isProcessed = true;
-			}
-			view.interrupt();
-			Bhuas b=new Bhuas(this);
-			STATE.setParsedImage(b);
-			//STATE.setParsedImage(new ParsedImagePreview(this));			
-			//STATE.getParsedImage().showImage();			
-		});
-
-		worker.setName("Controller support thread parseImage");
-		worker.setDaemon(true);
-		worker.start();
 
 	}
 
@@ -266,10 +265,6 @@ public class Controller {
 
 	public BufferedImage getBufferedImage() {
 		return STATE.getBufferedImage();
-	}
-
-	public void saveImage() {
-		STATE.getParsedImage().saveImage(this);
 	}
 
 	public boolean isRandom() {
@@ -303,12 +298,6 @@ public class Controller {
 	public boolean isPatsCreated() {
 		return isPathsCreated;
 	}
-
-	/*
-	 * public void setPatsCreated(boolean isPatsCreated) {
-	 * this.isPatsCreated = isPatsCreated;
-	 * }
-	 */
 
 	public void setFinalList(List<List<Chunk>> finalList) {
 		STATE.setChosedLayers(finalList);
@@ -352,6 +341,23 @@ public class Controller {
 
 	public String getProcessor() {
 		return stringImageParser;
+	}
+
+	public void saveImage() {
+		try {
+			imagePreview.saveImage(this);
+			pathPreview.saveImage(this);
+		} catch (Exception e) {
+			// ignored
+		}
+	}
+
+	public void setImagePreview(AbstractImagePreview imagePreview) {
+		this.imagePreview = imagePreview;
+	}
+
+	public void setPathPreview(AbstractImagePreview pathPreview) {
+		this.pathPreview = pathPreview;
 	}
 
 }

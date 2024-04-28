@@ -6,6 +6,7 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -33,13 +34,15 @@ public class GCodeGeneratorView extends JDialog {
 		getDelayCommand();
 		getScaleCommand();
 		getFeedrateCommand();
+		getSheetWidthAndHeight();
 		getButtons();
 		setTitle(controller.getLocaleText("create_gcode"));
 		setModal(true);
 		setResizable(false);
 		// setLocationRelativeTo(null);
-		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-		setLocation((int) (d.getWidth() / 2 - width / 2), (int) (d.getHeight() / 2 - height / 2));
+		Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
+		setLocation((int) (screenDimension.getWidth() / 2 - width / 2),
+				(int) (screenDimension.getHeight() / 2 - height / 2));
 		setLayout(new GridLayout(components.size(), 1));
 		components.stream().forEach(e -> add(e));
 		setSize(width, height);
@@ -112,12 +115,12 @@ public class GCodeGeneratorView extends JDialog {
 		container.add(input);
 		components.add(container);
 	}
-	
+
 	private void getFeedrateCommand() {
 		JPanel container = new JPanel();
 		container.setLayout(new GridLayout(1, 2));
 
-		//JLabel text = new JLabel(controller.getLocaleText("feedrate"));
+		// JLabel text = new JLabel(controller.getLocaleText("feedrate"));
 		JLabel text = new JLabel("feedrate");
 		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
 		JTextField input = new JTextField();
@@ -129,13 +132,41 @@ public class GCodeGeneratorView extends JDialog {
 		components.add(container);
 	}
 
+	private void getSheetWidthAndHeight() {
+		JPanel container = new JPanel();
+		container.setLayout(new GridLayout(1, 2));
+
+		JLabel text = new JLabel("width/height");
+		text.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+
+		JPanel sizeContainer = new JPanel();
+		sizeContainer.setLayout(new GridLayout(1, 2));
+
+		JTextField _width = new JTextField();
+		_width.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+		_width.setText("210");
+		_width.setFont(text.getFont().deriveFont(size));
+
+		JTextField _height = new JTextField();
+		_height.setHorizontalAlignment((int) CENTER_ALIGNMENT);
+		_height.setText("297");
+		_height.setFont(text.getFont().deriveFont(size));
+
+		sizeContainer.add(_width);
+		sizeContainer.add(_height);
+
+		container.add(text);
+		container.add(sizeContainer);
+		components.add(container);
+	}
+
 	private void getButtons() {
 		JPanel container = new JPanel();
 		container.setLayout(new GridLayout(1, 2));
-		
-		JButton okButton = new JButton(controller.getLocaleText("ok"));		
+
+		JButton okButton = new JButton(controller.getLocaleText("ok"));
 		okButton.addActionListener((e) -> {
-			settings=new ArrayList<>();
+			settings = new ArrayList<>();
 			for (Component c : components) {
 				if (c instanceof JPanel panel) {
 					for (Component jp : panel.getComponents()) {
@@ -145,15 +176,20 @@ public class GCodeGeneratorView extends JDialog {
 					}
 				}
 			}
-			//settings=temp;
-			//System.out.println(settings);
-			//dispose();
+			/*
+			 * get width and height from component {@link #getSheetWidthAndHeight()}
+			 */
+			Component c = components.get(5);
+			JPanel p = (JPanel) c;
+			p = (JPanel) Arrays.stream(p.getComponents()).filter(element -> element instanceof JPanel).findFirst()
+					.get();
+			Arrays.stream(p.getComponents()).filter(element -> element instanceof JTextField)
+					.forEach(element -> settings.add(((JTextField) element).getText()));
 			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 		});
 
 		JButton cancelButton = new JButton(controller.getLocaleText("cancel"));
 		cancelButton.addActionListener(e -> {
-			//dispose();
 			dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 		});
 

@@ -14,7 +14,7 @@ import ImageConvertor.views.desktop.View;
 
 public class GCodeGenerator {
 	private float pixelSize = 0.207f;
-	private short[] a4Sheet = new short[] { 210, 297 };
+	private short[] a4Sheet;;// = new short[] { 210, 297 };
 	private String up;// = "M5 S0";
 	private String down;// = "M3 S20";
 	private String delayString;// = "G4 P0.1";
@@ -62,19 +62,8 @@ public class GCodeGenerator {
 		delayString = settings.get(2);
 		scale = Float.valueOf(settings.get(3)).floatValue();
 		feedrate = settings.get(4);
-		/*
-		 * matrixes.stream().forEach(e -> {
-		 * int count = 0;
-		 * for (int i = 0; i < e.length; i++) {
-		 * for (int k = 0; k < e[i].length; k++) {
-		 * if (e[i][k] != null) {
-		 * count++;
-		 * }
-		 * }
-		 * }
-		 * System.out.println(count);
-		 * });
-		 */
+		a4Sheet = new short[] { Short.valueOf(settings.get(5)), Short.valueOf(settings.get(6)) };
+
 		createGCode();
 		saveGCode();
 	}
@@ -135,10 +124,12 @@ public class GCodeGenerator {
 							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 
 						} else {
-							//double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
-							//double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
+							// double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
+							// double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
+							//double curX = pathChunk.endPoint.x * pixelSize;
+							//double curY = pathChunk.startPoint.y * pixelSize;
 							double curX = pathChunk.endPoint.x * pixelSize;
-							double curY = pathChunk.startPoint.y * pixelSize;
+							double curY = pathChunk.endPoint.y * pixelSize;
 							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 						}
 

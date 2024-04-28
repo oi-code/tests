@@ -1,23 +1,17 @@
 package ImageConvertor.data;
 
-import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.swing.ImageIcon;
-
-import ImageConvertor.views.desktop.AbstractImagePreview;
-import ImageConvertor.views.desktop.ParsedImagePreview;
 
 public class State {
 	private BufferedImage bufferedImage;
 	private short chunkSize;
 	private short imageWidth, imageHeight;
 	private float stroke;
-	private AbstractImagePreview parsedImage;
 	private ImageIcon imageIcon;
 	private String fileName;
 	private String figure;
@@ -102,14 +96,6 @@ public class State {
 
 	public void setStroke(float stroke) {
 		this.stroke = stroke;
-	}
-
-	public AbstractImagePreview getParsedImage() {
-		return parsedImage;
-	}
-
-	public void setParsedImage(AbstractImagePreview parsedImage) {
-		this.parsedImage = parsedImage;
 	}
 
 	public ImageIcon getImageIcon() {

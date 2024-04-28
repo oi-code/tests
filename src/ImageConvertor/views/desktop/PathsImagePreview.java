@@ -34,7 +34,7 @@ public class PathsImagePreview extends JPanel
 
 	Controller controller;
 	List<List<Chunk>> forDrawContainer;
-	Short s;
+	Short chunkSize;
 	String figure;
 	JFrame mainPanel;
 	JScrollPane jsp;
@@ -54,7 +54,7 @@ public class PathsImagePreview extends JPanel
 		 * {@link #paintComponent()}
 		 */
 		this.forDrawContainer = new ArrayList<>(controller.getPathsPointList());
-		s = controller.getChunkSize();
+		chunkSize = controller.getChunkSize();
 		figure = controller.getFigure();
 		width = controller.getImageWidth();
 		height = controller.getImageHeight();
@@ -64,6 +64,7 @@ public class PathsImagePreview extends JPanel
 		mainPanel.setSize(controller.getImageWidth(), controller.getImageHeight() + 55);
 		mainPanel.setLocationRelativeTo(null);
 		getLayersBoxFrame();
+		//controllerr.setPathPreview(this);
 	}
 
 	@SuppressWarnings("unused")
@@ -91,22 +92,54 @@ public class PathsImagePreview extends JPanel
 		controller.getFinalList().clear();
 		for (List<Chunk> list : forDrawContainer) {
 			layerCount++;
-			repaint();
 			if (!boxes.get(layerCount).isSelected())
+				continue;
+			if (list.size() == 0)
 				continue;
 			controller.getFinalList().add(list);
 			Chunk prev = list.get(0);
 			for (Chunk cur : list) {
-				int prevX = prev.endPoint.x / count;
-				int prevY = prev.endPoint.y / count;
-				int curX = cur.startPoint.x / count;
-				int curY = cur.startPoint.y / count;
+				if (controller.isRandom()) {
+					int prevX = prev.startPoint.x / count;
+					int prevY = prev.startPoint.y / count;
+					int curX = cur.startPoint.x / count;
+					int curY = cur.startPoint.y / count;
+					g2.drawLine(prevX, prevY, curX, curY);
+					// g2.drawLine(curX, curY, cur.startPoint.x/count, cur.startPoint.y/count);
+					/*
+					 * prevX = prev.startPoint.x / count;
+					 * prevY = prev.startPoint.y / count;
+					 * curX = cur.endPoint.x / count;
+					 * curY = cur.endPoint.y / count;
+					 * g2.drawLine(prevX, prevY, curX, curY);
+					 */
+				} else {
+					/*
+					 * int prevX = prev.chunkPosition.x * chunkSize / count;
+					 * int prevY = prev.chunkPosition.y * chunkSize / count;
+					 * int curX = cur.chunkPosition.x * chunkSize / count;
+					 * int curY = cur.chunkPosition.y * chunkSize / count;
+					 */
+					int prevX = prev.endPoint.x / count;
+					int prevY = prev.endPoint.y / count;
+					int curX = cur.endPoint.x / count;
+					int curY = cur.endPoint.y / count;
+					g2.drawLine(prevX, prevY, curX, curY);
+				}
+				// int prevX = prev.endPoint.x / count;
+				// int prevY = prev.endPoint.y / count;
+				// int curX = cur.startPoint.x / count;
+				// int curY = cur.startPoint.y / count;
+				// int prevX = prev.chunkPosition.x * chunkSize / count;
+				// int prevY = prev.chunkPosition.y * chunkSize / count;
+				// int curX = cur.chunkPosition.x * chunkSize / count;
+				// int curY = cur.chunkPosition.y * chunkSize / count;
 				// if (prev.chunkPosition.distance(cur.chunkPosition) < controller.getChunkSize()/4)
-				g2.drawLine(prevX, prevY, curX, curY);
+				// g2.drawLine(prevX, prevY, curX, curY);
+
 				prev = cur;
 			}
 		}
-
 	}
 
 	public void showImage() {

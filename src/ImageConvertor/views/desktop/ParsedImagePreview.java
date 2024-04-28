@@ -36,7 +36,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-import ImageConvertor.core.Bhuas;
 import ImageConvertor.core.Controller;
 import ImageConvertor.data.Chunk;
 
