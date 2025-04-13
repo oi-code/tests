@@ -69,7 +69,15 @@ public class ViewProccessStatus extends JDialog implements Runnable {
 		} finally {
 			controller.setProcessWindowShowed(false);
 			// dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+			// try {
 			dispose();
+			/*
+			 * } catch (Exception ex) {
+			 * if(ex.getCause().equals(InterruptedException.class)) {
+			 * System.out.println("ERAR");
+			 * }
+			 * }
+			 */
 		}
 		return;
 	}

@@ -1,13 +1,10 @@
 package ImageConvertor.core;
 
-import java.awt.Point;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import ImageConvertor.data.Chunk;
 import ImageConvertor.views.desktop.View;
@@ -86,11 +83,13 @@ public class GCodeGenerator {
 		float maxCalcRange = chunkSize * maxConnectedRange;
 
 		// String pathTemplate = "G1 Y%f X%f F90000\n";
-		String pathTemplate = "G1 Y%f X%f\n";
+		String pathTemplate = "Y%f X%f\n";
 		sb.append("G21\n");
 		sb.append("G90\n");
-		sb.append("G94 " + feedrate + "\n");
-		sb.append(servoUpCutPath);
+		// sb.append("G94 " + feedrate + "\n");
+		sb.append(feedrate + "\n");
+		sb.append("G1\n");
+		// sb.append(servoUpCutPath);
 		boolean isUp = false;
 		for (List<Chunk> list : path) {
 			sb.append(servoUpCutPath);
@@ -99,6 +98,7 @@ public class GCodeGenerator {
 			sb.append(String.format(pathTemplate, prev.startPoint.getX() * pixelSize * scaler,
 					prev.startPoint.getY() * pixelSize * scaler));
 			sb.append(servoDownCutPath);
+			isUp = false;
 			for (Chunk cur : list) {
 				if (isUp) {
 					sb.append(servoDownCutPath);
@@ -111,12 +111,6 @@ public class GCodeGenerator {
 				matrixes.stream().forEach(matrix -> {
 					Chunk pathChunk = matrix[cur.chunkPosition.y][cur.chunkPosition.x];
 					if (pathChunk != null) {
-						/*
-						 * double curX = pathChunk.startPoint.getX() * pixelSize;
-						 * double curY = pathChunk.startPoint.getY() * pixelSize;
-						 * double curXe = pathChunk.endPoint.getX() * pixelSize;
-						 * double curYe = pathChunk.endPoint.getY() * pixelSize;
-						 */
 
 						if (controller.isRandom()) {
 							double curX = pathChunk.startPoint.x * pixelSize;
@@ -124,29 +118,12 @@ public class GCodeGenerator {
 							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 
 						} else {
-							// double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
-							// double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
-							//double curX = pathChunk.endPoint.x * pixelSize;
-							//double curY = pathChunk.startPoint.y * pixelSize;
-							double curX = pathChunk.endPoint.x * pixelSize;
-							double curY = pathChunk.endPoint.y * pixelSize;
+							double curX = pathChunk.chunkPosition.x * pixelSize * chunkSize;
+							double curY = pathChunk.chunkPosition.y * pixelSize * chunkSize;
 							sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
 						}
-
-						/*
-						 * if (controller.isRandom()) {
-						 * double curXe = pathChunk.endPoint.x * pixelSize * chunkSize;
-						 * double curYe = pathChunk.endPoint.y * pixelSize * chunkSize;
-						 * sb.append(String.format(pathTemplate, curXe * scaler, curYe * scaler));
-						 * }
-						 */
 					}
 				});
-				/*
-				 * double curX = cur.startPoint.getX() * pixelSize;
-				 * double curY = cur.startPoint.getY() * pixelSize;
-				 * sb.append(String.format(pathTemplate, curX * scaler, curY * scaler));
-				 */
 				prev = cur;
 			}
 		}
@@ -155,6 +132,7 @@ public class GCodeGenerator {
 		String text = sb.toString().replaceAll(",", ".");
 		sb.setLength(0);
 		sb.append(text);
+		System.out.println("gcode generated");
 	}
 
 	private void saveGCode() {
