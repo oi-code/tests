@@ -1,0 +1,188 @@
+#define echoInput PA5
+#define echoTrigger PA6
+#define fanControl PA7
+#define manualButton PA8
+#define blueLed PC13
+
+#define console Serial.println
+
+unsigned long currentTick = 0;
+unsigned long previousTick = 0;
+unsigned long hardwareRestartTime = 14 * 24 * 60 * 60 * 1000;  //first number is count of days
+unsigned long pauseTime = 1 * 1000;                            //1 second
+unsigned long buttonLastTimePressedTick = 0;
+
+float dist = 0;
+
+uint8_t counter = 0;
+uint8_t buttonPressedCount = 0;
+
+uint32_t fanEnableTime = 2 * 60 * 1000;  //2 minutes
+uint32_t delayBeforeEnableFan = 5;
+
+bool isEntityDetected = false;
+bool isFanEnabled = false;
+bool isInterrupted = false;
+bool isButtonPressed = false;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  pinMode(echoInput, INPUT);
+  pinMode(echoTrigger, OUTPUT);
+  pinMode(blueLed, OUTPUT);
+  pinMode(fanControl, OUTPUT);
+  pinMode(manualButton, INPUT);
+
+  digitalWrite(echoTrigger, LOW);
+  digitalWrite(fanControl, LOW);
+  digitalWrite(manualButton, LOW);
+  digitalWrite(blueLed, HIGH);
+
+  attachInterrupt(manualButton, buttonPressed, RISING);
+  //Serial.println("");
+}
+
+void loop() {
+  currentTick = millis();
+  sonicCounter();
+  if (isEntityDetected) {
+    reverseCounter();
+    enableFan();
+  }
+  checkWorkTime();
+}
+
+void reverseCounter() {
+  digitalWrite(blueLed, HIGH);
+  console(counter);
+  console(" reverse Counter");
+  previousTick = currentTick;
+  counter = delayBeforeEnableFan;
+  while (counter > 0) {
+    currentTick = millis();
+    if ((currentTick - previousTick) > pauseTime) {
+      previousTick = currentTick;
+      dist = getDist();
+      if (dist > 80) {
+        counter--;
+        console(counter);
+        console(" counter--");
+      } else {
+        counter = delayBeforeEnableFan;
+      }
+      console("distance ");
+      console(dist);
+    }
+    if (isInterrupted) {
+      return;
+    }
+  }
+  counter = 0;
+  isEntityDetected = false;
+}
+
+void sonicCounter() {
+  if (!isEntityDetected && (currentTick - previousTick) > pauseTime) {
+    dist = getDist();  // получаем расстояние
+    previousTick = currentTick;
+    if (dist < 100) {
+      counter++;
+      console(counter);
+      console(" counter++");
+      digitalWrite(blueLed, LOW);
+    } else {
+      if (counter > 0) {
+        counter--;
+        console(counter);
+        console("counter--");
+      }
+      digitalWrite(blueLed, HIGH);
+    }
+  }
+  if (counter > 9) {
+    isEntityDetected = true;
+  }
+}
+
+void checkWorkTime() {
+  if (currentTick > hardwareRestartTime) {
+    HAL_NVIC_SystemReset();
+  }
+}
+
+void enableFan() {
+  currentTick = millis();
+  previousTick = currentTick;
+  while ((currentTick - previousTick) < fanEnableTime) {
+    if (isInterrupted) {
+      goto fanInterruptedLabel;
+    }
+    currentTick = millis();
+    if (!isFanEnabled) {
+      digitalWrite(fanControl, HIGH);
+      isFanEnabled = true;
+    }
+  }
+fanInterruptedLabel:
+  digitalWrite(fanControl, LOW);
+  isFanEnabled = false;
+  if (isInterrupted) {
+    isInterrupted = false;
+  }
+}
+
+float getDist() {
+  //pause to prevert problems with echo
+  delay(50);
+  // 10mks impulse
+  digitalWrite(echoTrigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(echoTrigger, LOW);
+
+  // echo impulse time measure
+  uint32_t us = pulseIn(echoInput, HIGH);
+
+  // count time and return
+  return us / 58.2;
+}
+
+
+void buttonPressed() {
+  isEntityDetected = true;
+  console("button pressed interrupterd");
+
+  currentTick = millis();
+  if ((currentTick - buttonLastTimePressedTick) > 50) {
+    buttonLastTimePressedTick = currentTick;
+    buttonPressedCount++;
+    isButtonPressed = true;
+    console(buttonPressedCount);
+  }
+}
+
+void buttonHandler() {
+  console("button pressed handler");
+  if (isButtonPressed) {
+    currentTick = millis();
+    if ((currentTick - buttonLastTimePressedTick) > 200) {
+      switch (buttonPressedCount) {
+        case 1:
+          {
+            isEntityDetected = true;
+          }
+        case 2:
+          {
+          }
+        case 3:
+          {
+          }
+        default:
+          {
+          }
+      }
+      isButtonPressed = false;
+      buttonPressedCount = 0;
+    }
+  }
+}
