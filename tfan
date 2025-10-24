@@ -28,7 +28,6 @@ bool isFanEnabled = false;
 bool isNeedToEnableFan = false;
 bool isSystemDisabled = false;
 bool isButtonPressed = false;
-bool isLedEnabled = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -88,6 +87,8 @@ void reverseCounter() {
     reverseCounterPreviousTick = currentTick;
     dist = getDist();
     if (dist > 100) {
+      ledBlink();
+      delay(50);
       ledBlink();
       counter--;
       console(" counter-- " + (String)counter + " " + (String)dist);
@@ -177,7 +178,6 @@ void buttonHandler() {
             console("handle button case 3");
             isSystemDisabled = true;
             digitalWrite(LED, LOW);
-            isLedEnabled = true;
             break;
           }
         default:
@@ -185,7 +185,6 @@ void buttonHandler() {
             console("handle button case default and clear interrupted flag");
             isSystemDisabled = false;
             digitalWrite(LED, HIGH);
-            isLedEnabled = false;
             break;
           }
       }
@@ -203,13 +202,13 @@ void checkWorkTime() {
 
 void ledBlink() {
   //FUUUUUUUUUU
-  if (!isLedEnabled) {
+  if (digitalRead(LED) == HIGH) {
     digitalWrite(LED, LOW);
-    delay(20);
+    delay(25);
     digitalWrite(LED, HIGH);
   } else {
     digitalWrite(LED, HIGH);
-    delay(20);
+    delay(25);
     digitalWrite(LED, LOW);
   }
 }
