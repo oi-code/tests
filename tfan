@@ -2,27 +2,32 @@
 #define echoTrigger PA6
 #define fanControl PA7
 #define manualButton PA8
-#define blueLed PC13
+#define LED PC13
 
 #define console Serial.println
 
 unsigned long currentTick = 0;
-unsigned long previousTick = 0;
+unsigned long sonicCounterPreviousTick = 0;
+unsigned long reverseCounterPreviousTick = 0;
+unsigned long buttonLastTimePressedTick = 0;
+unsigned long fanEnableStartTimeTick = 0;
+unsigned long ledLastTimeEnableTick = 0;
+
 unsigned long hardwareRestartTime = 14 * 24 * 60 * 60 * 1000;  //first number is count of days
 unsigned long pauseTime = 1 * 1000;                            //1 second
-unsigned long buttonLastTimePressedTick = 0;
 
 float dist = 0;
 
 uint8_t counter = 0;
+uint8_t reverseCounter = 5;
 uint8_t buttonPressedCount = 0;
 
 uint32_t fanEnableTime = 2 * 60 * 1000;  //2 minutes
-uint32_t delayBeforeEnableFan = 5;
 
 bool isEntityDetected = false;
 bool isFanEnabled = false;
-bool isInterrupted = false;
+bool isNeedToEnableFan = false;
+bool isSystemDisabled = false;
 bool isButtonPressed = false;
 
 void setup() {
@@ -30,74 +35,44 @@ void setup() {
   Serial.begin(115200);
   pinMode(echoInput, INPUT);
   pinMode(echoTrigger, OUTPUT);
-  pinMode(blueLed, OUTPUT);
+  pinMode(LED, OUTPUT);
   pinMode(fanControl, OUTPUT);
   pinMode(manualButton, INPUT);
 
   digitalWrite(echoTrigger, LOW);
   digitalWrite(fanControl, LOW);
-  digitalWrite(manualButton, LOW);
-  digitalWrite(blueLed, HIGH);
+  digitalWrite(LED, HIGH);
 
-  attachInterrupt(manualButton, buttonPressed, RISING);
-  //Serial.println("");
+  attachInterrupt(manualButton, buttonPressed, FALLING);
 }
 
 void loop() {
   currentTick = millis();
+
   sonicCounter();
-  if (isEntityDetected) {
-    reverseCounter();
-    enableFan();
-  }
+  reverseCounter();
+  enableFan();
+
+  buttonHandler();
   checkWorkTime();
 }
 
-void reverseCounter() {
-  digitalWrite(blueLed, HIGH);
-  console(counter);
-  console(" reverse Counter");
-  previousTick = currentTick;
-  counter = delayBeforeEnableFan;
-  while (counter > 0) {
-    currentTick = millis();
-    if ((currentTick - previousTick) > pauseTime) {
-      previousTick = currentTick;
-      dist = getDist();
-      if (dist > 80) {
-        counter--;
-        console(counter);
-        console(" counter--");
-      } else {
-        counter = delayBeforeEnableFan;
-      }
-      console("distance ");
-      console(dist);
-    }
-    if (isInterrupted) {
-      return;
-    }
-  }
-  counter = 0;
-  isEntityDetected = false;
-}
-
 void sonicCounter() {
-  if (!isEntityDetected && (currentTick - previousTick) > pauseTime) {
-    dist = getDist();  // получаем расстояние
-    previousTick = currentTick;
+  if (isSystemDisabled) {
+    return;
+  }
+  if (!isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
+    dist = getDist();
+    sonicCounterPreviousTick = currentTick;
     if (dist < 100) {
+      ledBlink();
       counter++;
-      console(counter);
-      console(" counter++");
-      digitalWrite(blueLed, LOW);
+      console(" counter++ " + (String)counter + " " + (String)dist);
     } else {
       if (counter > 0) {
         counter--;
-        console(counter);
-        console("counter--");
+        console("counter-- " + (String)counter + " " + (String)dist);
       }
-      digitalWrite(blueLed, HIGH);
     }
   }
   if (counter > 9) {
@@ -105,30 +80,52 @@ void sonicCounter() {
   }
 }
 
-void checkWorkTime() {
-  if (currentTick > hardwareRestartTime) {
-    HAL_NVIC_SystemReset();
+void reverseCounter() {
+  if (isSystemDisabled) {
+    return;
+  }
+  if (isEntityDetected && !isNeedToEnableFan && (currentTick - reverseCounterPreviousTick) > pauseTime) {
+    reverseCounterPreviousTick = currentTick;
+    dist = getDist();
+    if (dist > 100) {
+      ledBlink();
+      delay(50);
+      ledBlink();
+      reverseCounter--;
+      console(" reverseCounter-- " + (String)reverseCounter + " " + (String)dist);
+      if (reverseCounter < 1) {
+        reverseCounter = 5;
+        isNeedToEnableFan = true;
+        isEntityDetected = false;
+      }
+    } else {
+      reverseCounter = 5;
+    }
   }
 }
 
 void enableFan() {
-  currentTick = millis();
-  previousTick = currentTick;
-  while ((currentTick - previousTick) < fanEnableTime) {
-    if (isInterrupted) {
-      goto fanInterruptedLabel;
-    }
-    currentTick = millis();
+  if (isSystemDisabled) {
+    goto interruptedFanFlag;
+  }
+  if (isNeedToEnableFan) {
     if (!isFanEnabled) {
       digitalWrite(fanControl, HIGH);
       isFanEnabled = true;
+      fanEnableStartTimeTick = currentTick;
+      console("fan enabled");
     }
-  }
-fanInterruptedLabel:
-  digitalWrite(fanControl, LOW);
-  isFanEnabled = false;
-  if (isInterrupted) {
-    isInterrupted = false;
+    if ((currentTick - fanEnableStartTimeTick) > fanEnableTime) {
+      console("fan disabled");
+interruptedFanFlag:
+      if (isFanEnabled) {
+        digitalWrite(fanControl, LOW);
+        isFanEnabled = false;
+      }
+      isNeedToEnableFan = false;
+    }
+  } else {
+    goto interruptedFanFlag;
   }
 }
 
@@ -149,11 +146,8 @@ float getDist() {
 
 
 void buttonPressed() {
-  isEntityDetected = true;
   console("button pressed interrupterd");
-
-  currentTick = millis();
-  if ((currentTick - buttonLastTimePressedTick) > 50) {
+  if ((currentTick - buttonLastTimePressedTick) > 220) {
     buttonLastTimePressedTick = currentTick;
     buttonPressedCount++;
     isButtonPressed = true;
@@ -162,27 +156,61 @@ void buttonPressed() {
 }
 
 void buttonHandler() {
-  console("button pressed handler");
   if (isButtonPressed) {
-    currentTick = millis();
-    if ((currentTick - buttonLastTimePressedTick) > 200) {
+    if ((currentTick - buttonLastTimePressedTick) > 2000) {
       switch (buttonPressedCount) {
         case 1:
           {
-            isEntityDetected = true;
+            console("handle button case 1");
+            isNeedToEnableFan = true;
+            fanEnableStartTimeTick = currentTick;
+            break;
           }
         case 2:
           {
+            console("handle button case 2");
+            isNeedToEnableFan = false;
+            isEntityDetected = false;
+            counter = 0;
+            reverseCounter = 5;
+            break;
           }
         case 3:
           {
+            console("handle button case 3");
+            isSystemDisabled = true;
+            digitalWrite(LED, LOW);
+            break;
           }
         default:
           {
+            console("handle button case default and clear interrupted flag");
+            isSystemDisabled = false;
+            digitalWrite(LED, HIGH);
+            break;
           }
       }
       isButtonPressed = false;
       buttonPressedCount = 0;
     }
+  }
+}
+
+void checkWorkTime() {
+  if (currentTick > hardwareRestartTime) {
+    HAL_NVIC_SystemReset();
+  }
+}
+
+void ledBlink() {
+  //FUUUUUUUUUU
+  if (digitalRead(LED) == HIGH) {
+    digitalWrite(LED, LOW);
+    delay(25);
+    digitalWrite(LED, HIGH);
+  } else {
+    digitalWrite(LED, HIGH);
+    delay(25);
+    digitalWrite(LED, LOW);
   }
 }
