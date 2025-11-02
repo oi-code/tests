@@ -146,7 +146,7 @@ float getDist() {
 
 void buttonPressed() {
   console("button pressed interrupterd");
-  if ((currentTick - buttonLastTimePressedTick) > 100) {
+  if ((currentTick - buttonLastTimePressedTick) > 220) {
     buttonLastTimePressedTick = currentTick;
     buttonPressedCount++;
     isButtonPressed = true;
@@ -156,7 +156,7 @@ void buttonPressed() {
 
 void buttonHandler() {
   if (isButtonPressed) {
-    if ((currentTick - buttonLastTimePressedTick) > 1000) {
+    if ((currentTick - buttonLastTimePressedTick) > 2000) {
       switch (buttonPressedCount) {
         case 1:
           {
