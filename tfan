@@ -17,9 +17,11 @@ unsigned long hardwareRestartTime = 14 * 24 * 60 * 60 * 1000;  //first number is
 unsigned long pauseTime = 1 * 1000;                            //1 second
 
 float dist = 0;
+float maxDist = 150;
 
 uint8_t counter = 0;
-uint8_t reverseCounter = 5;
+uint8_t maxCounter = 2;
+uint8_t revCounter = 5;
 uint8_t buttonPressedCount = 0;
 
 uint32_t fanEnableTime = 2 * 60 * 1000;  //2 minutes
@@ -64,7 +66,7 @@ void sonicCounter() {
   if (!isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
     dist = getDist();
     sonicCounterPreviousTick = currentTick;
-    if (dist < 100) {
+    if (dist < maxDist) {
       ledBlink();
       counter++;
       console(" counter++ " + (String)counter + " " + (String)dist);
@@ -75,7 +77,7 @@ void sonicCounter() {
       }
     }
   }
-  if (counter > 9) {
+  if (counter > maxCounter) {
     isEntityDetected = true;
   }
 }
@@ -87,19 +89,19 @@ void reverseCounter() {
   if (isEntityDetected && !isNeedToEnableFan && (currentTick - reverseCounterPreviousTick) > pauseTime) {
     reverseCounterPreviousTick = currentTick;
     dist = getDist();
-    if (dist > 100) {
+    if (dist > maxDist) {
       ledBlink();
       delay(50);
       ledBlink();
-      reverseCounter--;
-      console(" reverseCounter-- " + (String)reverseCounter + " " + (String)dist);
-      if (reverseCounter < 1) {
-        reverseCounter = 5;
+      revCounter--;
+      console(" revCounter-- " + (String)revCounter + " " + (String)dist);
+      if (revCounter < 1) {
+        revCounter = 5;
         isNeedToEnableFan = true;
         isEntityDetected = false;
       }
     } else {
-      reverseCounter = 5;
+      revCounter = 5;
     }
   }
 }
@@ -131,10 +133,10 @@ interruptedFanFlag:
 
 float getDist() {
   //pause to prevert problems with echo
-  delay(50);
+  delay(200);
   // 10mks impulse
   digitalWrite(echoTrigger, HIGH);
-  delayMicroseconds(10);
+  delayMicroseconds(5);  //10 default
   digitalWrite(echoTrigger, LOW);
 
   // echo impulse time measure
@@ -172,7 +174,7 @@ void buttonHandler() {
             isNeedToEnableFan = false;
             isEntityDetected = false;
             counter = 0;
-            reverseCounter = 5;
+            revCounter = 5;
             break;
           }
         case 3:
