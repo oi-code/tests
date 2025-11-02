@@ -19,6 +19,7 @@ unsigned long pauseTime = 1 * 1000;                            //1 second
 float dist = 0;
 
 uint8_t counter = 0;
+uint8_t reverseCounter = 5;
 uint8_t buttonPressedCount = 0;
 
 uint32_t fanEnableTime = 2 * 60 * 1000;  //2 minutes
@@ -90,15 +91,15 @@ void reverseCounter() {
       ledBlink();
       delay(50);
       ledBlink();
-      counter--;
-      console(" counter-- " + (String)counter + " " + (String)dist);
-      if (counter < 1) {
-        counter = 0;
+      reverseCounter--;
+      console(" reverseCounter-- " + (String)reverseCounter + " " + (String)dist);
+      if (reverseCounter < 1) {
+        reverseCounter = 5;
         isNeedToEnableFan = true;
         isEntityDetected = false;
       }
     } else {
-      counter = 10;
+      reverseCounter = 5;
     }
   }
 }
@@ -171,6 +172,7 @@ void buttonHandler() {
             isNeedToEnableFan = false;
             isEntityDetected = false;
             counter = 0;
+            reverseCounter = 5;
             break;
           }
         case 3:
