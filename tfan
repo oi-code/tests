@@ -33,7 +33,7 @@ bool isNeedToEnableFan = false;
 bool isSystemDisabled = false;
 bool isButtonPressed = false;
 
-String systemState = "Current system state: \n\t distance: " + (String)distance + "\n\t current counter: " + (String)counter + "\n\t isEntityDetected: " + (String)isEntityDetected + "\n\t is isNeedToEnableFan: " + (String)isNeedToEnableFan + "\n\t is isFanEnabled: " + (String)isFanEnabled + "\n\t is isSystemDisabled: " + (String)isSystemDisabled + "\n\t is lastButtonPressedCount: " + (String)lastButtonPressedCount;
+String systemState = "";
 
 
 void setup() {
@@ -71,7 +71,7 @@ void loop() {
 void entityPresenceCounter() {
   if (!isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
     if (distance < maxDistance) {
-      ledBlink(50, 1);
+      ledBlink(30, 1);
       counter++;
     } else {
       if (counter > 0) {
@@ -88,7 +88,7 @@ void entityPresenceCounter() {
 void entityAbsenceCounter() {
   if (isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
     if (distance > maxDistance) {
-      ledBlink(50, 2);
+      ledBlink(30, 2);
       counter++;
       if (counter > maxCounter) {
         isEntityDetected = false;
@@ -228,6 +228,7 @@ void ledBlink(uint8_t ledPauseTime, uint8_t repitCount) {
 
 void displaySystemStatus() {
   if ((currentTick - sonicCounterPreviousTick) > pauseTime) {
+    systemState = "Current system state: \n\t distance: " + (String)distance + "\n\t current counter: " + (String)counter + "\n\t isEntityDetected: " + (String)isEntityDetected + "\n\t isNeedToEnableFan: " + (String)isNeedToEnableFan + "\n\t isFanEnabled: " + (String)isFanEnabled + "\n\t isSystemDisabled: " + (String)isSystemDisabled + "\n\t lastButtonPressedCount: " + (String)lastButtonPressedCount;
     console(systemState);
   }
 }
