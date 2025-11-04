@@ -7,7 +7,7 @@
 #define console Serial.println
 
 unsigned long currentTick = 0;
-unsigned long sonicCounterPreviousTick = 0;
+unsigned long previousTick = 0;
 unsigned long buttonLastTimePressedTick = 0;
 unsigned long fanEnableStartTimeTick = 0;
 
@@ -24,8 +24,8 @@ uint8_t counter = 0;
 uint8_t buttonPressedCount = 0;
 uint8_t lastButtonPressedCount = 0;
 
-uint32_t minutes = 2 * 60 * 1000;            //2 minutes
-uint32_t seconds = 30 * 1000;                //30 seconds
+uint32_t minutes = 2 * 60 * 1000;  //2 minutes
+uint32_t seconds = 30 * 1000;      //30 seconds
 uint32_t fanEnableTime = minutes + seconds;
 
 bool isEntityDetected = false;
@@ -70,7 +70,7 @@ void loop() {
 }
 
 void entityPresenceCounter() {
-  if (!isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
+  if (!isEntityDetected && !isNeedToEnableFan && (currentTick - previousTick) > pauseTime) {
     if (distance < maxDistance) {
       ledBlink(30, 1);
       counter++;
@@ -87,7 +87,7 @@ void entityPresenceCounter() {
 }
 
 void entityAbsenceCounter() {
-  if (isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
+  if (isEntityDetected && !isNeedToEnableFan && (currentTick - previousTick) > pauseTime) {
     if (distance > maxDistance) {
       ledBlink(30, 2);
       counter++;
@@ -127,19 +127,18 @@ interruptedFanFlag:
 
 void getDistanceUltrasonucSensor() {
   //pause to prevert problems with echo
-  if ((currentTick - sonicCounterPreviousTick) < pauseTime) {
-    return;
+  if ((currentTick - previousTick) > pauseTime) {
+    previousTick = currentTick + 10;
+    // 10mks impulse
+    digitalWrite(TX, HIGH);
+    delayMicroseconds(10);  //10 default
+    digitalWrite(TX, LOW);
+
+    // echo impulse time measure
+    uint32_t us = pulseIn(RX, HIGH);
+
+    distance = us / 58.2;
   }
-  sonicCounterPreviousTick = currentTick;
-  // 10mks impulse
-  digitalWrite(TX, HIGH);
-  delayMicroseconds(10);  //10 default
-  digitalWrite(TX, LOW);
-
-  // echo impulse time measure
-  uint32_t us = pulseIn(RX, HIGH);
-
-  distance = us / 58.2;
 }
 
 
@@ -148,7 +147,7 @@ void buttonInterrupt() {
     buttonLastTimePressedTick = currentTick;
     buttonPressedCount++;
     isButtonPressed = true;
-    console("button press interrupt event count" + (String)buttonPressedCount);
+    console("button press interrupt event count: " + (String)buttonPressedCount);
   }
 }
 
@@ -158,7 +157,7 @@ void buttonHandler() {
       switch (buttonPressedCount) {
         case 1:
           {
-            console("handle button case 1:");
+            console("handle button case 1");
             break;
           }
         case 2:
@@ -228,7 +227,7 @@ void ledBlink(uint8_t ledPauseTime, uint8_t repitCount) {
 }
 
 void displaySystemStatus() {
-  if ((currentTick - sonicCounterPreviousTick) > pauseTime) {
+  if ((currentTick - previousTick) > pauseTime) {
     systemState = "Current system state: \n\t distance: " + (String)distance + "\n\t current counter: " + (String)counter + "\n\t isEntityDetected: " + (String)isEntityDetected + "\n\t isNeedToEnableFan: " + (String)isNeedToEnableFan + "\n\t isFanEnabled: " + (String)isFanEnabled + "\n\t isSystemDisabled: " + (String)isSystemDisabled + "\n\t lastButtonPressedCount: " + (String)lastButtonPressedCount;
     console(systemState);
   }
