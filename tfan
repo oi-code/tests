@@ -1,5 +1,5 @@
-#define echoInput PA5
-#define echoTrigger PA6
+#define RX PA5
+#define TX PA6
 #define fanControl PA7
 #define manualButton PA8
 #define LED PC13
@@ -8,23 +8,24 @@
 
 unsigned long currentTick = 0;
 unsigned long sonicCounterPreviousTick = 0;
-unsigned long reverseCounterPreviousTick = 0;
 unsigned long buttonLastTimePressedTick = 0;
 unsigned long fanEnableStartTimeTick = 0;
-unsigned long ledLastTimeEnableTick = 0;
 
-unsigned long hardwareRestartTime = 14 * 24 * 60 * 60 * 1000;  //first number is count of days
-unsigned long pauseTime = 1 * 1000;                            //1 second
+const unsigned long hardwareRestartTime = 14 * 24 * 60 * 60 * 1000;  //first number is count of days
+const unsigned long pauseTime = 1 * 1000;                            //1 second
 
-float dist = 0;
-float maxDist = 150;
+float distance = 0;
+const float maxDistance = 150;
+
+const uint8_t maxCounter = 6;
 
 uint8_t counter = 0;
-uint8_t maxCounter = 2;
-uint8_t revCounter = 5;
 uint8_t buttonPressedCount = 0;
+uint8_t lastButtonPressedCount = 0;
 
-uint32_t fanEnableTime = 2 * 60 * 1000;  //2 minutes
+uint32_t minutes = 2 * 60 * 1000;            //2 minutes
+uint32_t seconds = 30 * 1000;                //30 seconds
+uint32_t fanEnableTime = minutes + seconds;  //2 minutes
 
 bool isEntityDetected = false;
 bool isFanEnabled = false;
@@ -32,76 +33,70 @@ bool isNeedToEnableFan = false;
 bool isSystemDisabled = false;
 bool isButtonPressed = false;
 
+String systemState = "Current system state: \n\t distance: " + (String)distance + "\n\t current counter: " + (String)counter + "\n\t isEntityDetected: " + (String)isEntityDetected + "\n\t is isNeedToEnableFan: " + (String)isNeedToEnableFan + "\n\t is isFanEnabled: " + (String)isFanEnabled + "\n\t is isSystemDisabled: " + (String)isSystemDisabled + "\n\t is lastButtonPressedCount: " + (String)lastButtonPressedCount;
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(echoInput, INPUT);
-  pinMode(echoTrigger, OUTPUT);
+  pinMode(RX, INPUT);
+  pinMode(TX, OUTPUT);
   pinMode(LED, OUTPUT);
   pinMode(fanControl, OUTPUT);
   pinMode(manualButton, INPUT);
 
-  digitalWrite(echoTrigger, LOW);
+  digitalWrite(TX, LOW);
   digitalWrite(fanControl, LOW);
   digitalWrite(LED, HIGH);
 
-  attachInterrupt(manualButton, buttonPressed, FALLING);
+  attachInterrupt(manualButton, buttonInterrupt, FALLING);
 }
 
 void loop() {
+
   currentTick = millis();
 
-  sonicCounter();
-  reverseCounter();
-  enableFan();
+  if (!isSystemDisabled) {
+    getDistanceUltrasonucSensor();
+    entityPresenceCounter();
+    entityAbsenceCounter();
+    enableFan();
+  }
 
   buttonHandler();
   checkWorkTime();
+  displaySystemStatus();
 }
 
-void sonicCounter() {
-  if (isSystemDisabled) {
-    return;
-  }
+void entityPresenceCounter() {
   if (!isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
-    dist = getDist();
-    sonicCounterPreviousTick = currentTick;
-    if (dist < maxDist) {
-      ledBlink();
+    if (distance < maxDistance) {
+      ledBlink(50, 1);
       counter++;
-      console(" counter++ " + (String)counter + " " + (String)dist);
     } else {
       if (counter > 0) {
         counter--;
-        console("counter-- " + (String)counter + " " + (String)dist);
       }
     }
   }
   if (counter > maxCounter) {
     isEntityDetected = true;
+    counter = 0;
   }
 }
 
-void reverseCounter() {
-  if (isSystemDisabled) {
-    return;
-  }
-  if (isEntityDetected && !isNeedToEnableFan && (currentTick - reverseCounterPreviousTick) > pauseTime) {
-    reverseCounterPreviousTick = currentTick;
-    dist = getDist();
-    if (dist > maxDist) {
-      ledBlink();
-      delay(50);
-      ledBlink();
-      revCounter--;
-      console(" revCounter-- " + (String)revCounter + " " + (String)dist);
-      if (revCounter < 1) {
-        revCounter = 5;
-        isNeedToEnableFan = true;
+void entityAbsenceCounter() {
+  if (isEntityDetected && !isNeedToEnableFan && (currentTick - sonicCounterPreviousTick) > pauseTime) {
+    if (distance > maxDistance) {
+      ledBlink(50, 2);
+      counter++;
+      if (counter > maxCounter) {
         isEntityDetected = false;
+        isNeedToEnableFan = true;
+        counter = 0;
       }
     } else {
-      revCounter = 5;
+      counter = 0;
     }
   }
 }
@@ -115,10 +110,8 @@ void enableFan() {
       digitalWrite(fanControl, HIGH);
       isFanEnabled = true;
       fanEnableStartTimeTick = currentTick;
-      console("fan enabled");
     }
     if ((currentTick - fanEnableStartTimeTick) > fanEnableTime) {
-      console("fan disabled");
 interruptedFanFlag:
       if (isFanEnabled) {
         digitalWrite(fanControl, LOW);
@@ -131,29 +124,30 @@ interruptedFanFlag:
   }
 }
 
-float getDist() {
+void getDistanceUltrasonucSensor() {
   //pause to prevert problems with echo
-  delay(200);
+  if ((currentTick - sonicCounterPreviousTick) < pauseTime) {
+    return;
+  }
+  sonicCounterPreviousTick = currentTick;
   // 10mks impulse
-  digitalWrite(echoTrigger, HIGH);
-  delayMicroseconds(5);  //10 default
-  digitalWrite(echoTrigger, LOW);
+  digitalWrite(TX, HIGH);
+  delayMicroseconds(10);  //10 default
+  digitalWrite(TX, LOW);
 
   // echo impulse time measure
-  uint32_t us = pulseIn(echoInput, HIGH);
+  uint32_t us = pulseIn(RX, HIGH);
 
-  // count time and return
-  return us / 58.2;
+  distance = us / 58.2;
 }
 
 
-void buttonPressed() {
-  console("button pressed interrupterd");
+void buttonInterrupt() {
   if ((currentTick - buttonLastTimePressedTick) > 220) {
     buttonLastTimePressedTick = currentTick;
     buttonPressedCount++;
     isButtonPressed = true;
-    console(buttonPressedCount);
+    console("button press interrupt event count" + (String)buttonPressedCount);
   }
 }
 
@@ -163,23 +157,27 @@ void buttonHandler() {
       switch (buttonPressedCount) {
         case 1:
           {
-            console("handle button case 1");
-            isNeedToEnableFan = true;
-            fanEnableStartTimeTick = currentTick;
+            console("handle button case 1:");
             break;
           }
         case 2:
           {
             console("handle button case 2");
-            isNeedToEnableFan = false;
-            isEntityDetected = false;
-            counter = 0;
-            revCounter = 5;
+            isNeedToEnableFan = true;
+            fanEnableStartTimeTick = currentTick;
             break;
           }
         case 3:
           {
             console("handle button case 3");
+            isNeedToEnableFan = false;
+            isEntityDetected = false;
+            counter = 0;
+            break;
+          }
+        case 4:
+          {
+            console("handle button case 4");
             isSystemDisabled = true;
             digitalWrite(LED, LOW);
             break;
@@ -193,6 +191,7 @@ void buttonHandler() {
           }
       }
       isButtonPressed = false;
+      lastButtonPressedCount = buttonPressedCount;
       buttonPressedCount = 0;
     }
   }
@@ -214,5 +213,21 @@ void ledBlink() {
     digitalWrite(LED, HIGH);
     delay(25);
     digitalWrite(LED, LOW);
+  }
+}
+
+void ledBlink(uint8_t ledPauseTime, uint8_t repitCount) {
+  while (repitCount > 0) {
+    digitalWrite(LED, LOW);
+    delay(ledPauseTime);
+    digitalWrite(LED, HIGH);
+    delay(ledPauseTime);
+    repitCount--;
+  }
+}
+
+void displaySystemStatus() {
+  if ((currentTick - sonicCounterPreviousTick) > pauseTime) {
+    console(systemState);
   }
 }
