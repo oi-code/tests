@@ -33,6 +33,7 @@ bool isFanEnabled = false;
 bool isNeedToEnableFan = false;
 bool isSystemDisabled = false;
 bool isButtonPressed = false;
+bool isNeedToDisplayStatus = false;
 
 String systemState = "";
 
@@ -66,7 +67,10 @@ void loop() {
 
   buttonHandler();
   checkWorkTime();
-  displaySystemStatus();
+
+  if (isNeedToDisplayStatus) {
+    displaySystemStatus();
+  }
 }
 
 void entityPresenceCounter() {
@@ -110,6 +114,9 @@ void enableFan() {
     if (!isFanEnabled) {
       digitalWrite(fanControl, HIGH);
       isFanEnabled = true;
+      fanEnableStartTimeTick = currentTick;
+    }
+    if (isFanEnabled && (distance < maxDistance)) {
       fanEnableStartTimeTick = currentTick;
     }
     if ((currentTick - fanEnableStartTimeTick) > fanEnableTime) {
@@ -158,28 +165,28 @@ void buttonHandler() {
         case 1:
           {
             console("handle button case 1");
+            isNeedToEnableFan = false;
+            isEntityDetected = false;
+            counter = 0;
             break;
           }
         case 2:
           {
             console("handle button case 2");
             isNeedToEnableFan = true;
-            fanEnableStartTimeTick = currentTick;
             break;
           }
         case 3:
           {
             console("handle button case 3");
-            isNeedToEnableFan = false;
-            isEntityDetected = false;
-            counter = 0;
+            isSystemDisabled = true;
+            digitalWrite(LED, LOW);
             break;
           }
         case 4:
           {
             console("handle button case 4");
-            isSystemDisabled = true;
-            digitalWrite(LED, LOW);
+            isNeedToDisplayStatus = !isNeedToDisplayStatus;
             break;
           }
         default:
