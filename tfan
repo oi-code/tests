@@ -1,7 +1,7 @@
 #define RX PA5
 #define TX PA6
 #define fanControl PA7
-#define manualButton PA8
+#define button PA8
 #define LED PC13
 
 #define console Serial.println
@@ -21,6 +21,7 @@ float distance = 0;
 const uint8_t maxCounter = 6;
 
 uint8_t counter = 0;
+uint8_t _counter = 0;
 uint8_t buttonPressedCount = 0;
 uint8_t lastButtonPressedCount = 0;
 
@@ -45,13 +46,13 @@ void setup() {
   pinMode(TX, OUTPUT);
   pinMode(LED, OUTPUT);
   pinMode(fanControl, OUTPUT);
-  pinMode(manualButton, INPUT);
+  pinMode(button, INPUT);
 
   digitalWrite(TX, LOW);
   digitalWrite(fanControl, LOW);
   digitalWrite(LED, HIGH);
 
-  attachInterrupt(manualButton, buttonInterrupt, FALLING);
+  attachInterrupt(button, buttonInterrupt, FALLING);
 }
 
 void loop() {
@@ -74,7 +75,7 @@ void loop() {
 }
 
 void entityPresenceCounter() {
-  if (!isEntityDetected && !isNeedToEnableFan && (currentTick - previousTick) > pauseTime) {
+  if ((currentTick - previousTick) > pauseTime) {
     if (distance < maxDistance) {
       ledBlink(50, 1);
       counter++;
@@ -83,10 +84,13 @@ void entityPresenceCounter() {
         counter--;
       }
     }
-  }
-  if (counter > maxCounter) {
-    isEntityDetected = true;
-    counter = 0;
+    if (counter > maxCounter) {
+      if (!isNeedToEnableFan) {
+        isEntityDetected = true;
+      }
+      fanEnableStartTimeTick = currentTick;
+      counter = 0;
+    }
   }
 }
 
@@ -94,14 +98,14 @@ void entityAbsenceCounter() {
   if (isEntityDetected && !isNeedToEnableFan && (currentTick - previousTick) > pauseTime) {
     if (distance > maxDistance) {
       ledBlink(50, 2);
-      counter++;
-      if (counter > maxCounter) {
+      _counter++;
+      if (_counter > maxCounter) {
         isEntityDetected = false;
         isNeedToEnableFan = true;
-        counter = 0;
+        _counter = 0;
       }
     } else {
-      counter = 0;
+      _counter = 0;
     }
   }
 }
@@ -114,9 +118,6 @@ void enableFan() {
     if (!isFanEnabled) {
       digitalWrite(fanControl, HIGH);
       isFanEnabled = true;
-      fanEnableStartTimeTick = currentTick;
-    }
-    if (isFanEnabled && (distance < maxDistance)) {
       fanEnableStartTimeTick = currentTick;
     }
     if ((currentTick - fanEnableStartTimeTick) > fanEnableTime) {
@@ -168,6 +169,7 @@ void buttonHandler() {
             isNeedToEnableFan = false;
             isEntityDetected = false;
             counter = 0;
+            _counter = 0;
             break;
           }
         case 2:
