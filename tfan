@@ -2,7 +2,8 @@
 #define TX PA6
 #define fanControl PA7
 #define button PA8
-#define LED PC13
+#define systemBlueLed PC13
+#define whiteLed PA9
 
 #define console Serial.println
 
@@ -44,13 +45,15 @@ void setup() {
   Serial.begin(115200);
   pinMode(RX, INPUT);
   pinMode(TX, OUTPUT);
-  pinMode(LED, OUTPUT);
+  pinMode(systemBlueLed, OUTPUT);
+  pinMode(whiteLed, OUTPUT);
   pinMode(fanControl, OUTPUT);
   pinMode(button, INPUT);
 
   digitalWrite(TX, LOW);
   digitalWrite(fanControl, LOW);
-  digitalWrite(LED, HIGH);
+  digitalWrite(systemBlueLed, HIGH);
+  digitalWrite(whiteLed, LOW);
 
   attachInterrupt(button, buttonInterrupt, FALLING);
 }
@@ -77,7 +80,7 @@ void loop() {
 void entityPresenceCounter() {
   if ((currentTick - previousTick) > pauseTime) {
     if (distance < maxDistance) {
-      ledBlink(50, 1);
+      blinkSystemBlueLed(50, 1);
       counter++;
     } else {
       if (counter > 0) {
@@ -97,7 +100,7 @@ void entityPresenceCounter() {
 void entityAbsenceCounter() {
   if (isEntityDetected && !isNeedToEnableFan && (currentTick - previousTick) > pauseTime) {
     if (distance > maxDistance) {
-      ledBlink(50, 2);
+      blinkSystemBlueLed(50, 2);
       _counter++;
       if (_counter > maxCounter) {
         isEntityDetected = false;
@@ -151,51 +154,61 @@ void getDistanceUltrasonucSensor() {
 
 
 void buttonInterrupt() {
-  if ((currentTick - buttonLastTimePressedTick) > 220) {
+  if ((currentTick - buttonLastTimePressedTick) > 50) {
     buttonLastTimePressedTick = currentTick;
     buttonPressedCount++;
     isButtonPressed = true;
+    blinkWhiteLed(40, 1);
     console("button press interrupt event count: " + (String)buttonPressedCount);
   }
 }
 
 void buttonHandler() {
   if (isButtonPressed) {
-    if ((currentTick - buttonLastTimePressedTick) > 2000) {
+    if ((currentTick - buttonLastTimePressedTick) > 1500) {
       switch (buttonPressedCount) {
         case 1:
           {
-            console("handle button case 1");
+            console("handle button case 1: ignore");
+            break;
+          }
+        case 2:
+          {
+            console("handle button case 2: disable fan");
             isNeedToEnableFan = false;
             isEntityDetected = false;
             counter = 0;
             _counter = 0;
             break;
           }
-        case 2:
-          {
-            console("handle button case 2");
-            isNeedToEnableFan = true;
-            break;
-          }
         case 3:
           {
-            console("handle button case 3");
-            isSystemDisabled = true;
-            digitalWrite(LED, LOW);
+            console("handle button case 3: enable fan");
+            isNeedToEnableFan = true;
             break;
           }
         case 4:
           {
-            console("handle button case 4");
+            console("handle button case 4: switch system disable");
+            isSystemDisabled = !isSystemDisabled;
+            if (digitalRead(systemBlueLed) == LOW) {
+              digitalWrite(systemBlueLed, HIGH);
+            } else {
+              digitalWrite(systemBlueLed, LOW);
+            }
+            break;
+          }
+        case 5:
+          {
+            console("handle button case 5: switch display status");
             isNeedToDisplayStatus = !isNeedToDisplayStatus;
             break;
           }
         default:
           {
-            console("handle button case default and clear interrupted flag");
+            console("handle button case default");
             isSystemDisabled = false;
-            digitalWrite(LED, HIGH);
+            digitalWrite(systemBlueLed, HIGH);
             break;
           }
       }
@@ -212,24 +225,34 @@ void checkWorkTime() {
   }
 }
 
-void ledBlink() {
+void blinkSystemBlueLed() {
   //FUUUUUUUUUU
-  if (digitalRead(LED) == HIGH) {
-    digitalWrite(LED, LOW);
+  if (digitalRead(systemBlueLed) == HIGH) {
+    digitalWrite(systemBlueLed, LOW);
     delay(25);
-    digitalWrite(LED, HIGH);
+    digitalWrite(systemBlueLed, HIGH);
   } else {
-    digitalWrite(LED, HIGH);
+    digitalWrite(systemBlueLed, HIGH);
     delay(25);
-    digitalWrite(LED, LOW);
+    digitalWrite(systemBlueLed, LOW);
   }
 }
 
-void ledBlink(uint8_t ledPauseTime, uint8_t repitCount) {
+void blinkSystemBlueLed(uint8_t ledPauseTime, uint8_t repitCount) {
   while (repitCount > 0) {
-    digitalWrite(LED, LOW);
+    digitalWrite(systemBlueLed, LOW);
     delay(ledPauseTime);
-    digitalWrite(LED, HIGH);
+    digitalWrite(systemBlueLed, HIGH);
+    delay(ledPauseTime);
+    repitCount--;
+  }
+}
+
+void blinkWhiteLed(uint8_t ledPauseTime, uint8_t repitCount) {
+  while (repitCount > 0) {
+    digitalWrite(whiteLed, HIGH);
+    delay(ledPauseTime);
+    digitalWrite(whiteLed, LOW);
     delay(ledPauseTime);
     repitCount--;
   }
