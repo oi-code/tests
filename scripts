@@ -25,7 +25,7 @@ function injector() {
                 console.log('%cclaim points button not found', 'color:red');
             };
         };
-    }, 10000);
+    }, 120000);
 
     console.log('injected');
 }
