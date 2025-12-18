@@ -1,0 +1,74 @@
+// ==UserScript==
+// @name        twitch points auto claimer
+// @namespace   Violentmonkey Scripts
+// @match       *://www.twitch.tv/*
+// @grant       none
+// @version     1.0
+// @author      -
+// @description 18.12.2025, 22:06:24
+// ==/UserScript==
+setTimeout(function() {
+    console.log('trying to inject');
+    injector();
+}, 2000);
+
+function injector() {
+
+    setInterval(function() {
+        var elem = document.getElementsByTagName('button');
+
+        for (var i = 0; i < elem.length; i++) {
+            if (elem[i].ariaLabel == 'Получить бонус') {
+                elem[i].click();
+                console.log('%cclaim points button found, clicked', 'color:green');
+            } else {
+                console.log('%cclaim points button not found', 'color:red');
+            };
+        };
+    }, 10000);
+
+    console.log('injected');
+}
+
+// ==UserScript==
+// @name         youTube Video Speed
+// @namespace
+// @version      2025-12-16
+// @description
+// @author       You
+// @match        *://www.youtube.com/watch?v=*
+// @icon
+// @grant        none
+// @run-at       document-idle
+// ==/UserScript==
+
+setTimeout(function(){
+	console.log('setup');
+	injector();
+	console.log('done');
+}, 10);
+
+function injector(){
+	setInterval(()=>{
+		if(document.getElementById('mySpeed')!=null){
+			document.getElementById('mySpeed').remove();
+		}
+		//document.getElementById('mySpeed').remove();
+		var vsr=document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
+		var ddiv=document.createElement('div');
+		ddiv.id='mySpeed';
+		ddiv.style.color='orange';
+		document.getElementById('title').appendChild(ddiv);
+				ddiv.innerText=vsr+'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';
+	}, 1000);
+
+	document.addEventListener('keydown', (e)=>{
+		if(e.keyCode==107){
+			document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate+=0.25;
+		}
+		if(e.keyCode==109){
+			document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate-=0.25;
+		}
+	console.log('speed changed');
+  });
+}
