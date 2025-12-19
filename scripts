@@ -36,39 +36,50 @@ function injector() {
 // @version      2025-12-16
 // @description
 // @author       You
-// @match        *://www.youtube.com/watch?v=*
+// @match        *://www.youtube.com/*
 // @icon
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
 
-setTimeout(function(){
-	console.log('setup');
-	injector();
-	console.log('done');
+setTimeout(function() {
+    console.log('setup');
+    checkPath();
+    console.log('done');
 }, 10);
 
-function injector(){
-	setInterval(()=>{
-		if(document.getElementById('mySpeed')!=null){
-			document.getElementById('mySpeed').remove();
-		}
-		//document.getElementById('mySpeed').remove();
-		var vsr=document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
-		var ddiv=document.createElement('div');
-		ddiv.id='mySpeed';
-		ddiv.style.color='orange';
-		document.getElementById('title').appendChild(ddiv);
-				ddiv.innerText=vsr+'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';
-	}, 1000);
+function checkPath() {
+    setInterval(() => {
+        if (document.location.pathname == '/watch' && !document.getElementById('mySpeed')) {
+            createDiv();
+            appendListener();
+        }
+    }, 5000);
+}
 
-	document.addEventListener('keydown', (e)=>{
-		if(e.keyCode==107){
-			document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate+=0.25;
-		}
-		if(e.keyCode==109){
-			document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate-=0.25;
-		}
-	console.log('speed changed');
-  });
+function appendListener() {
+    document.addEventListener('keydown', (e) => {
+        if (e.keyCode == 107) {
+            document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate += 0.25;
+        }
+        if (e.keyCode == 109) {
+            document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate -= 0.25;
+        }
+        updateDiv();
+    });
+}
+
+function createDiv() {
+    var vsr = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
+    var ddiv = document.createElement('div');
+    ddiv.id = 'mySpeed';
+    ddiv.style.color = 'orange';
+    ddiv.innerText = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';
+    document.getElementById('title').appendChild(ddiv);
+}
+
+function updateDiv() {
+    document.getElementById('mySpeed').remove();
+    createDiv();
+    document.getElementById('mySpeed').innerText = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';;
 }
