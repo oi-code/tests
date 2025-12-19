@@ -54,22 +54,20 @@ setTimeout(function() {
     } else {
         console.log('no match found');
     }
-
-
     console.log('done');
 }, 1000);
 
 function initShorts() {
     setInterval(() => {
         createDiv(1);
-    }, 2500);
+    }, 1000);
     appendListener();
 }
 
 function initWatch() {
     setInterval(() => {
         createDiv(0);
-    }, 2500);
+    }, 1000);
     appendListener();
 }
 
