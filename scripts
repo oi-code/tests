@@ -44,17 +44,17 @@ function injector() {
 
 setTimeout(function() {
     console.log('setup');
-    checkPath();
+    init();
     console.log('done');
-}, 10);
+}, 1000);
 
-function checkPath() {
+function init() {
     setInterval(() => {
-        if (document.location.pathname == '/watch' && !document.getElementById('mySpeed')) {
+        if (document.location.pathname == '/watch') {
             createDiv();
-            appendListener();
         }
-    }, 5000);
+    }, 2500);
+    appendListener();
 }
 
 function appendListener() {
@@ -74,12 +74,10 @@ function createDiv() {
     var ddiv = document.createElement('div');
     ddiv.id = 'mySpeed';
     ddiv.style.color = 'orange';
-    ddiv.innerText = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';
     document.getElementById('title').appendChild(ddiv);
+    updateDiv();
 }
 
 function updateDiv() {
-    document.getElementById('mySpeed').remove();
-    createDiv();
     document.getElementById('mySpeed').innerText = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';;
 }
