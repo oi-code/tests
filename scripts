@@ -44,15 +44,31 @@ function injector() {
 
 setTimeout(function() {
     console.log('setup');
-    init();
+    if (document.location.pathname == '/watch') {
+        console.log('in watch');
+        initWatch();
+    } else
+    if (document.location.pathname.includes('/shorts/')) {
+        console.log('in shorts');
+        initShorts();
+    } else {
+        console.log('no match found');
+    }
+
+
     console.log('done');
 }, 1000);
 
-function init() {
+function initShorts() {
     setInterval(() => {
-        if (document.location.pathname == '/watch') {
-            createDiv();
-        }
+        createDiv(1);
+    }, 2500);
+    appendListener();
+}
+
+function initWatch() {
+    setInterval(() => {
+        createDiv(0);
     }, 2500);
     appendListener();
 }
@@ -69,7 +85,7 @@ function appendListener() {
     });
 }
 
-function createDiv() {
+function createDiv(value) {
     if (document.getElementById('mySpeed')) {
         document.getElementById('mySpeed').remove();
     }
@@ -77,7 +93,12 @@ function createDiv() {
     var ddiv = document.createElement('div');
     ddiv.id = 'mySpeed';
     ddiv.style.color = 'orange';
-    document.getElementById('title').appendChild(ddiv);
+
+    if (value == 1) {
+        document.getElementsByTagName('yt-shorts-video-title-view-model')[0].appendChild(ddiv);
+    } else if (value == 0) {
+        document.getElementById('title').appendChild(ddiv);
+    } else {}
     updateDiv();
 }
 
