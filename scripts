@@ -42,55 +42,63 @@ function injector() {
 // @run-at       document-idle
 // ==/UserScript==
 
-setTimeout(function() {
+setTimeout(() => {
     console.log('setup');
-    if (document.location.pathname == '/watch') {
-        console.log('in watch');
-        initWatch();
-    } else
-    if (document.location.pathname.includes('/shorts/')) {
-        console.log('in shorts');
-        initShorts();
-    } else {
-        console.log('no match found');
-    }
+    setInterval(() => {
+        let curDiv = document.getElementById('mySpeed');
+        if (curDiv) {
+            if (document.location.pathname == '/watch') {
+                if (curDiv.title == 1) {
+                    curDiv.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                    console.log('removed 1');
+                }
+                createDiv(0);
+                document.addEventListener('keydown', keyHandler);
+            } else if (document.location.pathname.includes('/shorts/')) {
+                if (curDiv.title == 0) {
+                    curDiv.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                    console.log('removed 0');
+                }
+                createDiv(1);
+                document.addEventListener('keydown', keyHandler);
+            } else {}
+        } else {
+            if (document.location.pathname == '/watch') {
+                createDiv(0);
+                document.addEventListener('keydown', keyHandler);
+            } else if (document.location.pathname.includes('/shorts/')) {
+                createDiv(1);
+                document.addEventListener('keydown', keyHandler);
+            } else {}
+        }
+    }, 1000);
     console.log('done');
 }, 1000);
 
-function initShorts() {
-    setInterval(() => {
-        createDiv(1);
-    }, 1000);
-    appendListener();
-}
 
-function initWatch() {
-    setInterval(() => {
-        createDiv(0);
-    }, 1000);
-    appendListener();
-}
-
-function appendListener() {
-    document.addEventListener('keydown', (e) => {
+function keyHandler(e) {
+    Array.from(document.getElementsByClassName('video-stream html5-main-video')).forEach((element) => {
         if (e.keyCode == 107) {
-            document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate += 0.25;
+            element.playbackRate += 0.25;
         }
         if (e.keyCode == 109) {
-            document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate -= 0.25;
+            element.playbackRate -= 0.25;
         }
-        updateDiv();
     });
+    updateDiv();
 }
 
 function createDiv(value) {
     if (document.getElementById('mySpeed')) {
         document.getElementById('mySpeed').remove();
     }
-    var vsr = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
-    var ddiv = document.createElement('div');
+    let vsr = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
+    let ddiv = document.createElement('div');
     ddiv.id = 'mySpeed';
     ddiv.style.color = 'orange';
+    ddiv.title = value;
 
     if (value == 1) {
         document.getElementsByTagName('yt-shorts-video-title-view-model')[0].appendChild(ddiv);
