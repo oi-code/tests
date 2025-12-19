@@ -70,6 +70,9 @@ function appendListener() {
 }
 
 function createDiv() {
+    if (document.getElementById('mySpeed')) {
+        document.getElementById('mySpeed').remove();
+    }
     var vsr = document.getElementsByClassName('video-stream html5-main-video')[0].playbackRate;
     var ddiv = document.createElement('div');
     ddiv.id = 'mySpeed';
