@@ -13,20 +13,23 @@ setTimeout(function() {
 }, 2000);
 
 function injector() {
-
     setInterval(function() {
         var elem = document.getElementsByTagName('button');
-
+        var clicked = false;
         for (var i = 0; i < elem.length; i++) {
             if (elem[i].ariaLabel == 'Получить бонус') {
                 elem[i].click();
                 console.log('%cclaim points button found, clicked', 'color:green');
-            } else {
-                console.log('%cclaim points button not found', 'color:red');
-            };
+                i = 999999999;
+                clicked = true;
+                break;
+            }
         };
+        if (!clicked) {
+            console.log('%cclaim points button not found', 'color:red');
+        }
+        clicked = false;
     }, 120000);
-
     console.log('injected');
 }
 
