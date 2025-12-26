@@ -19,7 +19,7 @@ function injector() {
         for (var i = 0; i < elem.length; i++) {
             if (elem[i].ariaLabel == 'Получить бонус') {
                 elem[i].click();
-                console.log('%cclaim points button found, clicked' + new Date(), 'color:green');
+                console.log('%cclaim points button found, clicked, ' + new Date(), 'color:green');
                 i = 999999999;
                 clicked = true;
                 break;
