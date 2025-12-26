@@ -19,7 +19,7 @@ function injector() {
         for (var i = 0; i < elem.length; i++) {
             if (elem[i].ariaLabel == 'Получить бонус') {
                 elem[i].click();
-                console.log('%cclaim points button found, clicked', 'color:green');
+                console.log('%cclaim points button found, clicked' + new Date(), 'color:green');
                 i = 999999999;
                 clicked = true;
                 break;
@@ -29,7 +29,7 @@ function injector() {
             console.log('%cclaim points button not found', 'color:red');
         }
         clicked = false;
-    }, 120000);
+    }, 90000);
     console.log('injected');
 }
 
@@ -58,12 +58,12 @@ setTimeout(() => {
 }, 1000);
 
 
-function keyHandler(e) {
+function keyHandler(event) {
     Array.from(document.getElementsByClassName('video-stream html5-main-video')).forEach((element) => {
-        if (e.keyCode == 107) {
+        if (event.keyCode == 107) {
             element.playbackRate += 0.25;
         }
-        if (e.keyCode == 109) {
+        if (event.keyCode == 109) {
             element.playbackRate -= 0.25;
         }
     });
@@ -76,6 +76,7 @@ function createDiv(value) {
         document.removeEventListener('keydown', keyHandler);
     }
     let div = document.createElement('div');
+   // document.div = div;
     div.id = 'mySpeed';
     div.style.color = 'orange';
     if (value == 0) {
