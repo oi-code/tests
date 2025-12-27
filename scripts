@@ -74,12 +74,13 @@ function keyHandler(event) {
 
 function createDiv(value) {
     let currentRate = 1;
-    if (document.getElementById('mySpeed')) {
-        currentRate = document.getElementById('mySpeed').title;
-        document.getElementById('mySpeed').remove();
+    let div = document.getElementById('mySpeed');
+    if (div) {
+        currentRate = div.title;
+        div.remove();
         document.removeEventListener('keydown', keyHandler);
     }
-    let div = document.createElement('div');
+    div = document.createElement('div');
     // document.div = div;
     div.id = 'mySpeed';
     div.style.color = 'orange';
