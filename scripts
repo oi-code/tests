@@ -60,21 +60,19 @@ setTimeout(() => {
 
 
 function keyHandler(event) {
-    //let curDiv = document.getElementById('mySpeed');
-    let logo = document.getElementById('logo');
-    let players = document.getElementsByClassName('video-stream html5-main-video');
-    Array.from(players).forEach((element) => {
-        if (event.keyCode == 107) {
-            element.playbackRate += 0.25;
-        }
-        if (event.keyCode == 109) {
-            element.playbackRate -= 0.25;
-        }
-        //curDiv.title = element.playbackRate;
-
-    });
-    logo.setAttribute('customspeed', players[0].playbackRate);
-    updateDiv();
+    if (event.keyCode == 107 || event.keyCode == 109) {
+        let players = document.getElementsByClassName('video-stream html5-main-video');
+        Array.from(players).forEach((element) => {
+            if (event.keyCode == 107) {
+                element.playbackRate += 0.25;
+            }
+            if (event.keyCode == 109) {
+                element.playbackRate -= 0.25;
+            }
+        });
+        document.getElementById('logo').setAttribute('customspeed', players[0].playbackRate);
+        updateDiv();
+    }
 }
 
 function createDiv(value) {
