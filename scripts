@@ -54,37 +54,38 @@ setTimeout(() => {
             createDiv(1);
         } else {}
     }, 1000);
+    document.getElementById('logo').setAttribute('customspeed', 1);
     console.log('done');
 }, 1000);
 
 
 function keyHandler(event) {
-    let curDiv = document.getElementById('mySpeed');
-    Array.from(document.getElementsByClassName('video-stream html5-main-video')).forEach((element) => {
+    //let curDiv = document.getElementById('mySpeed');
+    let logo = document.getElementById('logo');
+    let players = document.getElementsByClassName('video-stream html5-main-video');
+    Array.from(players).forEach((element) => {
         if (event.keyCode == 107) {
             element.playbackRate += 0.25;
         }
         if (event.keyCode == 109) {
             element.playbackRate -= 0.25;
         }
-        curDiv.title = element.playbackRate;
+        //curDiv.title = element.playbackRate;
+
     });
+    logo.setAttribute('customspeed', players[0].playbackRate);
     updateDiv();
 }
 
 function createDiv(value) {
-    let currentRate = 1;
     let div = document.getElementById('mySpeed');
     if (div) {
-        currentRate = div.title;
         div.remove();
         document.removeEventListener('keydown', keyHandler);
     }
     div = document.createElement('div');
-    // document.div = div;
     div.id = 'mySpeed';
     div.style.color = 'orange';
-    div.title = currentRate;
     if (value == 0) {
         document.getElementById('title').appendChild(div);
     } else if (value == 1) {
@@ -97,10 +98,10 @@ function createDiv(value) {
 function updateDiv() {
     //let currentPage=document.location.pathname.includes('watch')?'watch':document.location.pathname.includes('shorts')?'shorts':'none';
     let curDiv = document.getElementById('mySpeed');
-    let cv = parseFloat(curDiv.title);
+    let cv = parseFloat(document.getElementById('logo').getAttribute('customspeed'));
     let players = document.getElementsByClassName('video-stream html5-main-video');
     Array.from(players).forEach((element) => {
         element.playbackRate = cv;
     });
-    curDiv.innerText = players[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';;
+    curDiv.innerText = players[0].playbackRate + 'x <- videoSpeed. Use numpad\'s \'+\' to increase speed, \'-\' to decrease speed. Step is 0.25';
 }
