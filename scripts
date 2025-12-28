@@ -46,19 +46,15 @@ function injector() {
 // ==/UserScript==
 setTimeout(() => {
     console.log('setup');
-
-    document.getElementById('logo').setAttribute('customspeed', 1);
-
     setInterval(() => {
+        if (!document.getElementById('logo').hasAttribute('customspeed')) {
+            document.getElementById('logo').setAttribute('customspeed', 1);
+        }
         if (document.location.pathname == '/watch') {
             createDiv(0);
         } else if (document.location.pathname.includes('/shorts/')) {
             createDiv(1);
-        } else {
-            if (!document.getElementById('logo').hasAttribute('customspeed')) {
-                document.getElementById('logo').setAttribute('customspeed', 1);
-            }
-        }
+        } else {}
     }, 1000);
     console.log('done');
 
