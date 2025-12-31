@@ -65,37 +65,46 @@ setTimeout(() => {
 function keyHandler(event) {
     let players = document.getElementsByClassName('video-stream html5-main-video');
     let playersStream = Array.from(players);
-    if (event.keyCode == 107 || event.keyCode == 109) {
-        playersStream.forEach((element) => {
-            if (event.keyCode == 107) {
+    switch (event.keyCode) {
+        case 107:
+            playersStream.forEach((element) => {
                 element.playbackRate += 0.25;
-            }
-            if (event.keyCode == 109) {
+            });
+            break;
+        case 109:
+            playersStream.forEach((element) => {
                 element.playbackRate -= 0.25;
-            }
-        });
-        document.getElementById('logo').setAttribute('customspeed', players[0].playbackRate);
-        updateDiv();
+            });
+            break;
+        default:
     }
     if (document.location.pathname.includes('shorts')) {
-        if (event.keyCode == 74) {
-            playersStream.forEach((element) => {
-                element.currentTime -= 5;
-            });
-        } else if (event.keyCode == 76) {
-            playersStream.forEach((element) => {
-                element.currentTime += 5;
-            });
-        } else if (event.keyCode == 188) {
-            playersStream.forEach((element) => {
-                element.currentTime -= 0.01;
-            });
-        } else if (event.keyCode == 190) {
-            playersStream.forEach((element) => {
-                element.currentTime += 0.01;
-            });
+        switch (event.keyCode) {
+            case 74:
+                playersStream.forEach((element) => {
+                    element.currentTime -= 5;
+                });
+                break;
+            case 76:
+                playersStream.forEach((element) => {
+                    element.currentTime += 5;
+                });
+                break;
+            case 188:
+                playersStream.forEach((element) => {
+                    element.currentTime -= 0.01;
+                });
+                break;
+            case 190:
+                playersStream.forEach((element) => {
+                    element.currentTime += 0.01;
+                });
+                break;
+            default:
         }
     }
+    document.getElementById('logo').setAttribute('customspeed', players[0].playbackRate);
+    updateDiv();
 }
 
 function createDiv(value) {
