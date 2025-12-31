@@ -61,9 +61,9 @@ setTimeout(() => {
 }, 1000);
 
 
-function keyHandler(event) {
-    let players = document.getElementsByClassName('video-stream html5-main-video');
-    let playersStream = Array.from(players);
+
+function keyHandler(event) {     
+    let playersStream = Array.from(document.getElementsByClassName('video-stream html5-main-video'));
     if (event.keyCode == 107 || event.keyCode == 109) {
         playersStream.forEach((element) => {
             if (event.keyCode == 107) {
@@ -96,6 +96,7 @@ function keyHandler(event) {
         }
     }
 }
+
 
 function createDiv(value) {
     let div = document.getElementById('mySpeed');
