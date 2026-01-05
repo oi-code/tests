@@ -30,6 +30,16 @@ function injector() {
         }
         clicked = false;
     }, 90000);
+
+    document.getElementsByClassName('Layout-sc-1xcs6mc-0 bMcAyM side-bar-contents')[0].addEventListener('mouseover', (e) => {
+        const posX = e.clientX;
+        const posY = e.clientY;
+        if (posX < 200 && posY > 800 && posY < 950) {
+            console.log(posX + '___' + posY);
+            document.getElementsByClassName('ScReactModalBase-sc-26ijes-0 foAhuv tw-dialog-layer')[0].remove();
+        }
+    });
+
     console.log('injected');
 }
 
